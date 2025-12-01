@@ -38,7 +38,16 @@
             Name = "Form1";
             Text = "Form1";
             Load += Form1_Load;
+            Paint += Form1_Paint;
+            MouseDown += Form1_MouseDown;
+            MouseMove += Form1_MouseMove;
+            MouseUp += Form1_MouseUp;
             ResumeLayout(false);
+        }
+
+        private void Form1_Paint1(object sender, PaintEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
