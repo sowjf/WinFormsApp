@@ -1,29 +1,28 @@
 using System.Drawing;
+using System.Numerics;
 using WinFormsApp;
 
 namespace WinFormsApp {
     public partial class Form1 : Form {
-        private List<Shape> shapes = new List<Shape>();
-        private List<Shape> selectedShapes = new List<Shape>();
+        private List<Shape> L = new List<Shape>();
         private ShapeType currentShapeType = ShapeType.Circle;
-        private Point lastMousePosition;
-        private bool isDragging = false;
 
         public Form1() {
             InitializeComponent();
             
             int centerX = ClientSize.Width / 2;
             int centerY = ClientSize.Height / 2;
-            shapes.Add(new Circle(centerX - 100, centerY));
-            shapes.Add(new Triangle(centerX, centerY));
-            shapes.Add(new Square(centerX + 100, centerY));
+            L.Add(new Circle(centerX - 50, centerY - 50));
+            L.Add(new Triangle(centerX + 50, centerY - 50));
+            L.Add(new Square(centerX, centerY + 50));
             
             CreateShapeMenu();
+            this.DoubleBuffered = true;
         }
 
         private void CreateShapeMenu() {
             MenuStrip menuStrip = new MenuStrip();
-            ToolStripMenuItem shapeMenu = new ToolStripMenuItem("Shapes");
+            ToolStripMenuItem shapeMenu = new ToolStripMenuItem("Shape Type");
             
             ToolStripMenuItem circleItem = new ToolStripMenuItem("Circle");
             circleItem.Click += (s, e) => { currentShapeType = ShapeType.Circle; };
@@ -42,117 +41,126 @@ namespace WinFormsApp {
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e) {
-            foreach (Shape shape in shapes) {
-                if (selectedShapes.Contains(shape)) {
-                    shape.Draw(e.Graphics, Color.Red);
-                } else {
-                    shape.Draw(e.Graphics, Color.Black);
+            DrawPolygon();
+        }
+
+        private void DrawPolygon(Graphics g) {
+            int n = L.Count;
+            Pen polygonPen = new Pen(Color.Black, 2);
+
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    if (L[i].X != L[j].X) {
+                        double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
+                        double b = L[i].Y - k * L[i].X;
+
+                        bool oneSide = true;
+                        int side = 0;
+
+                        for (int z = 0; z < n; z++) {
+                            if (z == i || z == j) continue;
+
+                            double Y_z = k * L[z].X + b;
+                            double delta = L[z].Y - Y_z;
+
+                            int currSide;
+                            if (delta > 0) currSide = 1;
+                            else currSide = -1;
+
+                            if (side == 0) { side = currSide; }
+                            else if (currSide != side) {
+                                oneSide = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    else {
+                        double x_const = L[i].X;
+                        bool oneSide = true;
+                        int side = 0;
+
+                        for (int z = 0; z < n; z++) {
+                            if (z == i || z == j) continue;
+
+                            double delta = L[z].X - x_const;
+
+                            int currSide;
+                            if (delta > 0) currSide = 1;
+                            else currSide = -1;
+
+                            if (side == 0) { side = currSide; }
+                            else if (currSide != side) {
+                                oneSide = false;
+                                break;
+                            }
+                            if (allSameSide)
+                            {
+                                g.DrawLine(shellPen, lst[i].X, lst[i].Y, lst[j].X, lst[j].Y);
+                                lst[i].IsInShell = true;
+                                lst[j].IsInShell = true;
+                            }
+                        }
+                    }
                 }
             }
         }
 
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                lastMousePosition = e.Location;
-                isDragging = false;
-                
-                Shape clickedShape = null;
-                foreach (Shape shape in shapes) {
-                    if (shape.IsInside(e.X, e.Y)) {
-                        clickedShape = shape;
+            bool hit = false;
+            
+            foreach (Shape shape in L) {
+                if (shape.IsInside(e.X, e.Y)) {
+                    shape.IsMoved = true;
+                    hit = true;
+                    break;
+                }
+            }
+            
+            if (!hit) {
+                Shape newShape;
+                switch (currentShapeType) {
+                    case ShapeType.Circle:
+                        newShape = new Circle(e.X, e.Y);
                         break;
-                    }
+                    case ShapeType.Triangle:
+                        newShape = new Triangle(e.X, e.Y);
+                        break;
+                    case ShapeType.Square:
+                        newShape = new Square(e.X, e.Y);
+                        break;
+                    default:
+                        newShape = new Circle(e.X, e.Y);
+                        break;
                 }
                 
-                if (clickedShape != null) {
-                    if (Control.ModifierKeys == Keys.Control) {
-                        if (selectedShapes.Contains(clickedShape)) {
-                            selectedShapes.Remove(clickedShape);
-                        } else {
-                            selectedShapes.Add(clickedShape);
-                        }
-                    } else {
-                        if (!selectedShapes.Contains(clickedShape)) {
-                            ClearSelection();
-                            selectedShapes.Add(clickedShape);
-                        }
-                    }
-                    
-                    foreach (Shape shape in selectedShapes) {
-                        shape.IsMoved = true;
-                    }
-                } else {
-                    if (Control.ModifierKeys != Keys.Control) {
-                        ClearSelection();
-                    }
-                    
-                    Shape newShape = CreateShapeByType(currentShapeType, e.X, e.Y);
-                    shapes.Add(newShape);
-                    selectedShapes.Add(newShape);
-                    newShape.IsMoved = true;
-                }
-                
+                L.Add(newShape);
+                newShape.IsMoved = true;
                 Refresh();
             }
         }
 
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                foreach (Shape shape in shapes) {
-                    shape.IsMoved = false;
-                }
-                isDragging = false;
+            foreach (Shape shape in L) {
+                shape.IsMoved = false;
             }
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left && selectedShapes.Count > 0) {
-                isDragging = true;
-                int deltaX = e.X - lastMousePosition.X;
-                int deltaY = e.Y - lastMousePosition.Y;
-                
-                foreach (Shape shape in selectedShapes) {
-                    shape.X += deltaX;
-                    shape.Y += deltaY;
+            bool moved = false;
+            foreach (Shape shape in L) {
+                if (shape.IsMoved) {
+                    shape.X = e.X;
+                    shape.Y = e.Y;
+                    moved = true;
                 }
-                
-                lastMousePosition = e.Location;
-                Refresh();
             }
-        }
-
-        private void ClearSelection() {
-            foreach (Shape shape in selectedShapes) {
-                shape.IsMoved = false;
-            }
-            selectedShapes.Clear();
-        }
-
-        private Shape CreateShapeByType(ShapeType type, int x, int y) {
-            switch (type) {
-                case ShapeType.Circle:
-                    return new Circle(x, y);
-                case ShapeType.Triangle:
-                    return new Triangle(x, y);
-                case ShapeType.Square:
-                    return new Square(x, y);
-                default:
-                    return new Circle(x, y);
-            }
-        }
-
-        private void Form1_KeyDown(object sender, KeyEventArgs e) {
-            if (e.KeyCode == Keys.Delete && selectedShapes.Count > 0) {
-                foreach (Shape shape in selectedShapes) {
-                    shapes.Remove(shape);
-                }
-                selectedShapes.Clear();
+            if (moved) {
                 Refresh();
             }
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            this.KeyPreview = true;
         }
 
         private void fileToolStripMenuItem_Click(object sender, EventArgs e) {
