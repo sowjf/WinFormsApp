@@ -43,8 +43,7 @@ namespace WinFormsApp {
         private void Form1_Paint(object sender, PaintEventArgs e) {
             DrawPolygon(e.Graphics);
 
-            foreach (Shape shape in L)
-            {
+            foreach (Shape shape in L) {
                 shape.Draw(e.Graphics);
             }
         }
@@ -55,54 +54,32 @@ namespace WinFormsApp {
 
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
-
                     bool oneSide = true;
                     int side = 0;
+                    double delta;
 
-                    if (L[i].X != L[j].X) {
-                        double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
-                        double b = L[i].Y - k * L[i].X;
+                    for (int z = 0; z < n; z++) {
+                        if (i == z || j == z) continue;
 
-                        for (int z = 0; z < n; z++) {
-                            if (z == i || z == j) continue;
+                        if (L[i].X != L[j].X) {
+                            double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
+                            double b = L[i].Y - k * L[i].X;
 
                             double Y_z = k * L[z].X + b;
-                            double delta = L[z].Y - Y_z;
+                            delta = L[z].Y - Y_z;
 
-                            int currSide;
-                            if (delta > 0) currSide = 1;
-                            else currSide = -1;
-
-                            if (side == 0) { side = currSide; }
-                            else if (currSide != side) {
-                                oneSide = false;
-                                break;
-                            }
-                            if (oneSide) {
-                                g.DrawLine(polygonPen, L[i].X, L[i].Y, L[j].X, L[j].Y);
-                                L[i].IsInsidePolygon = true;
-                                L[j].IsInsidePolygon = true;
-                            }
+                        } else { 
+                            delta = L[z].X - (double)L[i].X;
                         }
-                    }
 
-                    else {
-                        double x_const = L[i].X;
+                        int currSide;
+                        if (delta > 0) currSide = 1;
+                        else currSide = -1;
 
-                        for (int z = 0; z < n; z++) {
-                            if (z == i || z == j) continue;
-
-                            double delta = L[z].X - x_const;
-
-                            int currSide;
-                            if (delta > 0) currSide = 1;
-                            else currSide = -1;
-
-                            if (side == 0) { side = currSide; }
-                            else if (currSide != side) {
-                                oneSide = false;
-                                break;
-                            }
+                        if (side == 0) side = currSide;
+                        else if (currSide != side) {
+                            oneSide = false;
+                            break;
                         }
                     }
 
@@ -164,16 +141,15 @@ namespace WinFormsApp {
                     moved = true;
                 }
             }
+
             if (moved) {
                 Refresh();
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e) {
-        }
+        private void Form1_Load(object sender, EventArgs e) { }
 
-        private void fileToolStripMenuItem_Click(object sender, EventArgs e) {
-        }
+        private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }
     }
 
     public enum ShapeType {
