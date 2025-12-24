@@ -41,7 +41,12 @@ namespace WinFormsApp {
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e) {
-            DrawPolygon();
+            DrawPolygon(e.Graphics);
+
+            foreach (Shape shape in L)
+            {
+                shape.Draw(e.Graphics);
+            }
         }
 
         private void DrawPolygon(Graphics g) {
@@ -50,12 +55,13 @@ namespace WinFormsApp {
 
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
+
+                    bool oneSide = true;
+                    int side = 0;
+
                     if (L[i].X != L[j].X) {
                         double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
                         double b = L[i].Y - k * L[i].X;
-
-                        bool oneSide = true;
-                        int side = 0;
 
                         for (int z = 0; z < n; z++) {
                             if (z == i || z == j) continue;
@@ -72,13 +78,16 @@ namespace WinFormsApp {
                                 oneSide = false;
                                 break;
                             }
+                            if (oneSide) {
+                                g.DrawLine(polygonPen, L[i].X, L[i].Y, L[j].X, L[j].Y);
+                                L[i].IsInsidePolygon = true;
+                                L[j].IsInsidePolygon = true;
+                            }
                         }
                     }
 
                     else {
                         double x_const = L[i].X;
-                        bool oneSide = true;
-                        int side = 0;
 
                         for (int z = 0; z < n; z++) {
                             if (z == i || z == j) continue;
@@ -94,13 +103,13 @@ namespace WinFormsApp {
                                 oneSide = false;
                                 break;
                             }
-                            if (allSameSide)
-                            {
-                                g.DrawLine(shellPen, lst[i].X, lst[i].Y, lst[j].X, lst[j].Y);
-                                lst[i].IsInShell = true;
-                                lst[j].IsInShell = true;
-                            }
                         }
+                    }
+
+                    if (oneSide) {
+                        g.DrawLine(polygonPen, L[i].X, L[i].Y, L[j].X, L[j].Y);
+                        L[i].IsInsidePolygon = true;
+                        L[j].IsInsidePolygon = true;
                     }
                 }
             }

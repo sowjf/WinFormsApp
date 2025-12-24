@@ -1,21 +1,18 @@
 ﻿using System;
 using System.Drawing;
 
-namespace WinFormsApp
-{
-    public abstract class Shape
-    {
+namespace WinFormsApp {
+    public abstract class Shape {
         protected int x, y;
         protected static int R;
-        protected bool IsMov;
+        protected bool IsMov,
+                       IsInsidePoly;
 
-        static Shape()
-        {
+        static Shape() {
             R = 25;
         }
 
-        public Shape(int x, int y)
-        {
+        public Shape(int x, int y) {
             this.x = x;
             this.y = y;
         }
@@ -23,31 +20,31 @@ namespace WinFormsApp
         public abstract void Draw(Graphics g);
         public abstract bool IsInside(int pointX, int pointY);
 
-        public bool IsMoved
-        {
+        public bool IsMoved {
             get { return IsMov; }
             set { IsMov = value; }
         }
 
-        public int X
-        {
+        public int X {
             get { return x; }
             set { x = value; }
         }
 
-        public int Y
-        {
+        public bool IsInsidePolygon {
+            get { return IsInsidePoly; }
+            set { IsInsidePoly = value; }
+        }
+
+        public int Y {
             get { return y; }
             set { y = value; }
         }
     }
 
-    public class Circle : Shape
-    {
+    public class Circle : Shape {
         public Circle(int x, int y) : base(x, y) { }
 
-        public override void Draw(Graphics g)
-        {
+        public override void Draw(Graphics g) {
             g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R);
         }
 
@@ -57,12 +54,10 @@ namespace WinFormsApp
         }
     }
 
-    public class Triangle : Shape
-    {
+    public class Triangle : Shape {
         public Triangle(int x, int y) : base(x, y) { }
 
-        public override void Draw(Graphics g)
-        {
+        public override void Draw(Graphics g) {
             Point[] points = {
                 new Point(x, y - R),
                 new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2),
@@ -72,8 +67,7 @@ namespace WinFormsApp
             g.DrawPolygon(Pens.Black, points);
         }
 
-        public override bool IsInside(int pointX, int pointY)
-        {
+        public override bool IsInside(int pointX, int pointY) {
             Point p1 = new Point(x, y - R); // up vertex
             Point p2 = new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down left vertex
             Point p3 = new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down right vertex
@@ -89,18 +83,15 @@ namespace WinFormsApp
         }
     }
 
-    public class Square : Shape
-    {
+    public class Square : Shape {
         public Square(int x, int y) : base(x, y) { }
 
-        public override void Draw(Graphics g)
-        {
+        public override void Draw(Graphics g) {
             int side = (int)(R * Math.Sqrt(2));
             g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
         }
 
-        public override bool IsInside(int pointX, int pointY)
-        {
+        public override bool IsInside(int pointX, int pointY) {
             int side = (int)(R * Math.Sqrt(2));
             int halfSide = side / 2;
             return pointX >= x - halfSide && pointX <= x + halfSide &&
