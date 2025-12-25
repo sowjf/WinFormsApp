@@ -8,6 +8,8 @@ namespace WinFormsApp {
         protected bool IsMov,
                        IsInsidePoly;
 
+        public bool IsHullVertex { get; set; }
+
         static Shape() {
             R = 25;
         }
@@ -48,8 +50,7 @@ namespace WinFormsApp {
             g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R);
         }
 
-        public override bool IsInside(int pointX, int pointY)
-        {
+        public override bool IsInside(int pointX, int pointY) {
             return (pointX - x) * (pointX - x) + (pointY - y) * (pointY - y) <= R * R;
         }
     }
