@@ -3,8 +3,6 @@ using System.Drawing;
 using System.Numerics;
 using WinFormsApp;
 
-// change the logic of draged shapes
-
 namespace WinFormsApp {
     public partial class Form1 : Form {
         private List<Shape> L = new List<Shape>();
@@ -12,35 +10,15 @@ namespace WinFormsApp {
 
         public Form1() {
             InitializeComponent();
+            circleToolStripMenuItem.Checked = true;
 
             int centerX = ClientSize.Width / 2;
             int centerY = ClientSize.Height / 2;
-            L.Add(new Circle(centerX - 50, centerY - 50));
-            L.Add(new Triangle(centerX + 50, centerY - 50));
-            L.Add(new Square(centerX, centerY + 50));
+            //L.Add(new Circle(centerX - 50, centerY - 50));
+            //L.Add(new Triangle(centerX + 50, centerY - 50));
+            //L.Add(new Square(centerX, centerY + 50));
 
-            CreateShapeMenu();
             this.DoubleBuffered = true;
-        }
-
-        private void CreateShapeMenu() {
-            MenuStrip menuStrip = new MenuStrip();
-            ToolStripMenuItem shapeMenu = new ToolStripMenuItem("Shape Type");
-
-            ToolStripMenuItem circleItem = new ToolStripMenuItem("Circle");
-            circleItem.Click += (s, e) => { currentShapeType = ShapeType.Circle; };
-
-            ToolStripMenuItem triangleItem = new ToolStripMenuItem("Triangle");
-            triangleItem.Click += (s, e) => { currentShapeType = ShapeType.Triangle; };
-
-            ToolStripMenuItem squareItem = new ToolStripMenuItem("Square");
-            squareItem.Click += (s, e) => { currentShapeType = ShapeType.Square; };
-
-            shapeMenu.DropDownItems.AddRange(new ToolStripItem[] { circleItem, triangleItem, squareItem });
-            menuStrip.Items.Add(shapeMenu);
-
-            this.MainMenuStrip = menuStrip;
-            this.Controls.Add(menuStrip);
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e) {
@@ -53,7 +31,7 @@ namespace WinFormsApp {
 
         private void DrawPolygon(Graphics g) {
             int n = L.Count;
-            //if (n < 3) return;
+            if (n < 3) return;
 
             Pen polygonPen = new Pen(Color.Black, 2);
 
@@ -208,18 +186,59 @@ namespace WinFormsApp {
                 }
             }
 
-            for (int i = L.Count - 1; i >= 0; i--) {
-                if (!L[i].IsHullVertex) {
-                    L.RemoveAt(i);
+            if (L.Count > 3) {
+                for (int i = L.Count - 1; i >= 0; i--) {
+                    if (!L[i].IsHullVertex) {
+                        L.RemoveAt(i);
+                    }
                 }
             }
 
             Refresh();
         }
 
+        private void Form1_MouseClick(object sender, MouseEventArgs e) {
+            if (e.Button == MouseButtons.Left) {
+                    
+            } else if (e.Button == MouseButtons.Right) {
+                bool removed = false;
+                for (int i = L.Count - 1; i >= 0; i--) {
+                    if (L[i].IsInside(e.X, e.Y)) {
+                        L.RemoveAt(i);
+                        removed = true;
+                    }
+                }
+
+                if (removed) {
+                    Refresh();
+                }
+            }
+        }
         private void Form1_Load(object sender, EventArgs e) { }
 
-        private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }
+        //private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }
+
+        private void circleToolStripMenuItem_Click(object sender, EventArgs e) {
+            currentShapeType = ShapeType.Circle;
+            circleToolStripMenuItem.Checked = true;
+            triangleToolStripMenuItem.Checked = false;
+            squareToolStripMenuItem.Checked = false;
+        }
+
+        private void triangleToolStripMenuItem_Click(object sender, EventArgs e) {
+            currentShapeType = ShapeType.Triangle;
+            circleToolStripMenuItem.Checked = false;
+            triangleToolStripMenuItem.Checked = true;
+            squareToolStripMenuItem.Checked = false;
+        }
+
+        private void squareToolStripMenuItem_Click(object sender, EventArgs e) {
+            currentShapeType = ShapeType.Square;
+            circleToolStripMenuItem.Checked = false;
+            triangleToolStripMenuItem.Checked = false;
+            squareToolStripMenuItem.Checked = true;
+        }
+
     }
 
     public enum ShapeType {
