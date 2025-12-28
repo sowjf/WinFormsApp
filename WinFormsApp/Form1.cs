@@ -1,6 +1,9 @@
+using System;
 using System.Drawing;
 using System.Numerics;
 using WinFormsApp;
+
+// change the logic of draged shapes
 
 namespace WinFormsApp {
     public partial class Form1 : Form {
@@ -50,7 +53,7 @@ namespace WinFormsApp {
 
         private void DrawPolygon(Graphics g) {
             int n = L.Count;
-            if (n < 3) return;
+            //if (n < 3) return;
 
             Pen polygonPen = new Pen(Color.Black, 2);
 
@@ -58,7 +61,7 @@ namespace WinFormsApp {
                 shape.IsHullVertex = false;
             }
 
-            List<Shape> hullVertices = new List<Shape>();
+            List<Shape> convexHull = new List<Shape>(); //точки выпуклой оболочки
 
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
@@ -72,8 +75,8 @@ namespace WinFormsApp {
                         if (L[i].X != L[j].X) {
                             double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
                             double b = L[i].Y - k * L[i].X;
-                            double Y_z = k * L[z].X + b;
-                            delta = L[z].Y - Y_z;
+
+                            delta = L[z].Y - (double)(k * L[z].X + b);
                         } else {
                             delta = L[z].X - (double)L[i].X;
                         }
@@ -89,32 +92,33 @@ namespace WinFormsApp {
                     }
 
                     if (oneSide) {
-                        if (!hullVertices.Contains(L[i])) hullVertices.Add(L[i]);
-                        if (!hullVertices.Contains(L[j])) hullVertices.Add(L[j]);
+                        if (!convexHull.Contains(L[i])) convexHull.Add(L[i]);
+                        if (!convexHull.Contains(L[j])) convexHull.Add(L[j]);
                         L[i].IsHullVertex = true;
                         L[j].IsHullVertex = true;
                     }
                 }
             }
 
-            if (hullVertices.Count >= 2) {
-                for (int i = 0; i < hullVertices.Count; i++) {
-                    for (int j = i + 1; j < hullVertices.Count; j++) {
+            if (convexHull.Count >= 2) {
+                for (int i = 0; i < convexHull.Count; i++) {
+                    for (int j = i + 1; j < convexHull.Count; j++) {
                         bool isEdge = true;
                         int side = 0;
 
                         for (int z = 0; z < n; z++) {
-                            if (L[z] == hullVertices[i] || L[z] == hullVertices[j]) continue;
+                            if (L[z] == convexHull[i] || L[z] == convexHull[j]) continue;
 
                             double delta;
-                            if (hullVertices[i].X != hullVertices[j].X) {
-                                double k = (double)(hullVertices[i].Y - hullVertices[j].Y) /
-                                          (hullVertices[i].X - hullVertices[j].X);
-                                double b = hullVertices[i].Y - k * hullVertices[i].X;
-                                double Y_z = k * L[z].X + b;
-                                delta = L[z].Y - Y_z;
+                            if (convexHull[i].X != convexHull[j].X) {
+                                double k = (double)(convexHull[i].Y - convexHull[j].Y) /
+                                          (convexHull[i].X - convexHull[j].X);
+
+                                double b = convexHull[i].Y - k * convexHull[i].X;
+                                delta = L[z].Y - (double)(k * L[z].X + b);
+
                             } else {
-                                delta = L[z].X - (double)hullVertices[i].X;
+                                delta = L[z].X - (double)convexHull[i].X;
                             }
 
                             int currSide = Math.Sign(delta);
@@ -128,16 +132,10 @@ namespace WinFormsApp {
                         }
 
                         if (isEdge) {
-                            g.DrawLine(polygonPen, hullVertices[i].X, hullVertices[i].Y,
-                                      hullVertices[j].X, hullVertices[j].Y);
+                            g.DrawLine(polygonPen, convexHull[i].X, convexHull[i].Y,
+                                      convexHull[j].X, convexHull[j].Y);
                         }
                     }
-                }
-            }
-
-            for (int i = L.Count - 1; i >= 0; i--) {
-                if (!L[i].IsHullVertex) {
-                    L.RemoveAt(i);
                 }
             }
         }
@@ -149,7 +147,6 @@ namespace WinFormsApp {
                 if (shape.IsInside(e.X, e.Y)) {
                     shape.IsMoved = true;
                     hit = true;
-                    break;
                 }
             }
 
@@ -176,26 +173,48 @@ namespace WinFormsApp {
             }
         }
 
-        private void Form1_MouseUp(object sender, MouseEventArgs e) {
-            foreach (Shape shape in L) {
-                shape.IsMoved = false;
-            }
-            Refresh();
-        }
-
         private void Form1_MouseMove(object sender, MouseEventArgs e) {
             bool moved = false;
+
+            List<Shape> movedShapes = new List<Shape>();
             foreach (Shape shape in L) {
                 if (shape.IsMoved) {
-                    shape.X = e.X;
-                    shape.Y = e.Y;
-                    moved = true;
+                    movedShapes.Add(shape);
                 }
+            }
+
+            if (movedShapes.Count > 0) {
+                Shape firstMoved = movedShapes[0];
+                int deltaX = e.X - firstMoved.X;
+                int deltaY = e.Y - firstMoved.Y;
+
+                foreach (Shape shape in movedShapes) {
+                    shape.X += deltaX;
+                    shape.Y += deltaY;
+                }
+
+                moved = true;
             }
 
             if (moved) {
                 Refresh();
             }
+        }
+
+        private void Form1_MouseUp(object sender, MouseEventArgs e) {
+            foreach (Shape shape in L) {
+                if (shape.IsInside(e.X, e.Y)) {
+                    shape.IsMoved = false;
+                }
+            }
+
+            for (int i = L.Count - 1; i >= 0; i--) {
+                if (!L[i].IsHullVertex) {
+                    L.RemoveAt(i);
+                }
+            }
+
+            Refresh();
         }
 
         private void Form1_Load(object sender, EventArgs e) { }

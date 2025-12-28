@@ -5,8 +5,7 @@ namespace WinFormsApp {
     public abstract class Shape {
         protected int x, y;
         protected static int R;
-        protected bool IsMov,
-                       IsInsidePoly;
+        protected bool IsMov;
 
         public bool IsHullVertex { get; set; }
 
@@ -30,11 +29,6 @@ namespace WinFormsApp {
         public int X {
             get { return x; }
             set { x = value; }
-        }
-
-        public bool IsInsidePolygon {
-            get { return IsInsidePoly; }
-            set { IsInsidePoly = value; }
         }
 
         public int Y {
@@ -73,14 +67,21 @@ namespace WinFormsApp {
             Point p2 = new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down left vertex
             Point p3 = new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down right vertex
 
-            double den = (p2.Y - p3.Y) * (p1.X - p3.X) + (p3.X - p2.X) * (p1.Y - p3.Y); // denominator
-            if (den == 0) return false;
+            double ab = Math.Sqrt((p2.X - p1.X) * (p2.X - p1.X) + (p2.Y - p1.Y) * (p2.Y - p1.Y));
+            double bc = Math.Sqrt((p3.X - p2.X) * (p3.X - p2.X) + (p3.Y - p2.Y) * (p3.Y - p2.Y));
+            double ca = Math.Sqrt((p1.X - p3.X) * (p1.X - p3.X) + (p1.Y - p3.Y) * (p1.Y - p3.Y));
 
-            double a = ((p2.Y - p3.Y) * (pointX - p3.X) + (p3.X - p2.X) * (pointY - p3.Y)) / den;
-            double b = ((p3.Y - p1.Y) * (pointX - p3.X) + (p1.X - p3.X) * (pointY - p3.Y)) / den;
-            double c = 1 - a - b;
+            double na = Math.Sqrt((pointX - p1.X) * (pointX - p1.X) + (pointY - p1.Y) * (pointY - p1.Y)),
+                   nb = Math.Sqrt((pointX - p2.X) * (pointX - p2.X) + (pointY - p2.Y) * (pointY - p2.Y)),
+                   nc = Math.Sqrt((pointX - p3.X) * (pointX - p3.X) + (pointY - p3.Y) * (pointY - p3.Y));
 
-            return a >= 0 && a <= 1 && b >= 0 && b <= 1 && c >= 0 && c <= 1;
+            double p = (ab +  bc + ca) / 2;
+
+            double P1 = (ab + nb + na) / 2,
+                   P2 = (bc + nb + nc) / 2,
+                   P3 = (ca + na + nc) / 2;
+
+            return (Math.Abs(Math.Sqrt(P1 * (P1 - ab) * (P1 - nb) * (P1 - na)) + Math.Sqrt(P2 * (P2 - bc) * (P2 - nb) * (P2 - nc)) + Math.Sqrt(P3 * (P3 - ca) * (P3 - nc) * (P3 - na)) - Math.Sqrt(p * (p - ab) * (p - bc) * (p - ca)))) <= 0.0001;
         }
     }
 
