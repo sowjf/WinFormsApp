@@ -119,7 +119,8 @@ namespace WinFormsApp {
         }
 
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
-            bool hit = false;
+            bool hit = false,
+                 removed = false;
 
             foreach (Shape shape in L) {
                 if (shape.IsInside(e.X, e.Y)) {
@@ -147,6 +148,20 @@ namespace WinFormsApp {
 
                 L.Add(newShape);
                 newShape.IsMoved = true;
+                Refresh();
+            }
+
+            if (e.Button == MouseButtons.Right) {
+
+                for (int i = L.Count - 1; i >= 0; i--) {
+                    if (L[i].IsInside(e.X, e.Y)) {
+                        L.RemoveAt(i);
+                        removed = true;
+                    }
+                }
+            }
+
+            if (removed) {
                 Refresh();
             }
         }
@@ -197,21 +212,6 @@ namespace WinFormsApp {
             Refresh();
         }
 
-        private void Form1_MouseClick(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Right) {
-                bool removed = false;
-                for (int i = L.Count - 1; i >= 0; i--) {
-                    if (L[i].IsInside(e.X, e.Y)) {
-                        L.RemoveAt(i);
-                        removed = true;
-                    }
-                }
-
-                if (removed) {
-                    Refresh();
-                }
-            }
-        }
         private void Form1_Load(object sender, EventArgs e) { }
 
         //private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }

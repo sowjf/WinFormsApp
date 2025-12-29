@@ -129,7 +129,7 @@
             Text = "Shapes";
             Load += Form1_Load;
             Paint += Form1_Paint;
-            MouseClick += Form1_MouseClick;
+            //MouseClick += Form1_MouseClick;
             MouseDown += Form1_MouseDown;
             MouseMove += Form1_MouseMove;
             MouseUp += Form1_MouseUp;
