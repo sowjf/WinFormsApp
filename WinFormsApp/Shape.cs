@@ -3,7 +3,7 @@ using System.Drawing;
 
 namespace WinFormsApp {
     public abstract class Shape {
-        protected int x, y;
+        protected int x, y, dx, dy;
         protected static int R;
         protected bool IsMov;
 
@@ -34,6 +34,18 @@ namespace WinFormsApp {
         public int Y {
             get { return y; }
             set { y = value; }
+        }
+    }
+
+    public class Invisible : Shape {
+        public Invisible(int x, int y) : base (x, y) { }
+
+        public override void Draw(Graphics g) {
+            throw new NotImplementedException();
+        }
+
+        public override bool IsInside(int pointX, int pointY) {
+            throw new NotImplementedException();
         }
     }
 

@@ -31,9 +31,9 @@ namespace WinFormsApp {
 
         private void DrawPolygon(Graphics g) {
             int n = L.Count;
-            if (n < 3) return;
+            //if (n < 3) return;
 
-            Pen polygonPen = new Pen(Color.Black, 2);
+            Pen polygonPen = new Pen(Color.Black, 1);
 
             foreach (Shape shape in L) {
                 shape.IsHullVertex = false;
@@ -130,6 +130,8 @@ namespace WinFormsApp {
             }
 
             if (!hit) {
+
+                //if ()
                 Shape newShape;
                 switch (currentShapeType) {
                     case ShapeType.Circle:
@@ -148,7 +150,14 @@ namespace WinFormsApp {
 
                 L.Add(newShape);
                 newShape.IsMoved = true;
+
                 Refresh();
+
+                if (!newShape.IsHullVertex) {
+                    foreach (Shape shape in L) {
+                        shape.IsMoved = true;
+                    }
+                }
             }
 
             if (e.Button == MouseButtons.Right) {
@@ -177,7 +186,11 @@ namespace WinFormsApp {
             }
 
             if (movedShapes.Count > 0) {
-                Shape firstMoved = movedShapes[0];
+                Shape firstMoved;
+
+                if (movedShapes.Count > 0 && !movedShapes[movedShapes.Count - 1].IsHullVertex) { firstMoved = movedShapes[movedShapes.Count - 1]; }
+                else { firstMoved = movedShapes[0]; }
+
                 int deltaX = e.X - firstMoved.X;
                 int deltaY = e.Y - firstMoved.Y;
 
@@ -193,10 +206,15 @@ namespace WinFormsApp {
                 Refresh();
             }
         }
-
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
             foreach (Shape shape in L) {
                 if (shape.IsInside(e.X, e.Y)) {
+                    shape.IsMoved = false;
+                }
+            }
+
+            if (L.Count > 0 && !L[L.Count - 1].IsHullVertex) {
+                foreach (Shape shape in L) {
                     shape.IsMoved = false;
                 }
             }
@@ -211,7 +229,6 @@ namespace WinFormsApp {
 
             Refresh();
         }
-
         private void Form1_Load(object sender, EventArgs e) { }
 
         //private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }
