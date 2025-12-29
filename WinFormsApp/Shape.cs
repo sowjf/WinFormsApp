@@ -7,7 +7,7 @@ namespace WinFormsApp {
         protected static int R;
         protected bool IsMov;
 
-        public bool IsHullVertex { get; set; }
+        public bool IsHullVertex { get; set; } // явялется ли вершиной оболочки
 
         static Shape() {
             R = 25;

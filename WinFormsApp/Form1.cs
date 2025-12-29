@@ -12,8 +12,8 @@ namespace WinFormsApp {
             InitializeComponent();
             circleToolStripMenuItem.Checked = true;
 
-            int centerX = ClientSize.Width / 2;
-            int centerY = ClientSize.Height / 2;
+            //int centerX = ClientSize.Width / 2;
+            //int centerY = ClientSize.Height / 2;
             //L.Add(new Circle(centerX - 50, centerY - 50));
             //L.Add(new Triangle(centerX + 50, centerY - 50));
             //L.Add(new Square(centerX, centerY + 50));
@@ -198,9 +198,7 @@ namespace WinFormsApp {
         }
 
         private void Form1_MouseClick(object sender, MouseEventArgs e) {
-            if (e.Button == MouseButtons.Left) {
-                    
-            } else if (e.Button == MouseButtons.Right) {
+            if (e.Button == MouseButtons.Right) {
                 bool removed = false;
                 for (int i = L.Count - 1; i >= 0; i--) {
                     if (L[i].IsInside(e.X, e.Y)) {
@@ -239,6 +237,9 @@ namespace WinFormsApp {
             squareToolStripMenuItem.Checked = true;
         }
 
+        private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e) {
+
+        }
     }
 
     public enum ShapeType {
