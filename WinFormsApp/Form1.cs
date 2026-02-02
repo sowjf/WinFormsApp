@@ -1,16 +1,21 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 using WinFormsApp;
+using WinFormsApp1;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace WinFormsApp {
     public partial class Form1 : Form {
-        private List<Shape> L = new List<Shape>();
-        private ShapeType currentShapeType = ShapeType.Circle;
+        public List<Shape> L = new List<Shape>();
+        private ShapeType currShapeType = ShapeType.Circle;
+        private DrawingMode drawingMode = DrawingMode.byDefinition;
 
         public Form1() {
             InitializeComponent();
             circleToolStripMenuItem.Checked = true;
+            byDefinitionToolStripMenuItem.Checked = true;
 
             //int centerX = ClientSize.Width / 2;
             //int centerY = ClientSize.Height / 2;
@@ -22,18 +27,111 @@ namespace WinFormsApp {
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e) {
-            DrawPolygon(e.Graphics);
+
+            switch (drawingMode) {
+                case DrawingMode.byDefinition:
+                    DrawPolygonByDifinition(e.Graphics);
+                    break;
+                case DrawingMode.jarvis:
+                    DrawPolygonJarvis(e.Graphics);
+                    break;
+                case DrawingMode.graphics:
+                    break;
+                //default:
+                //    break;
+            }
 
             foreach (Shape shape in L) {
                 shape.Draw(e.Graphics);
             }
         }
 
-        private void DrawPolygon(Graphics g) {
+        public double TestJarvis() {
+            var stopwatch = Stopwatch.StartNew();
+            DrawPolygonJarvis(null);
+            stopwatch.Stop();
+            return stopwatch.Elapsed.TotalMilliseconds;
+        }
+
+        public double TestDefinition() {
+            var stopwatch = Stopwatch.StartNew();
+            DrawPolygonByDifinition(null);
+            stopwatch.Stop();
+            return stopwatch.Elapsed.TotalMilliseconds;
+        }
+
+        public void DrawPolygonJarvis(Graphics g) {
+            //if (L.Count < 3) return;
+
+            Pen polygonPen = new Pen(Color.Blue, 1);
+
+            foreach (Shape shape in L) {
+                shape.IsHullVertex = false;
+            }
+
+            List<Shape> convexHull = new List<Shape>(); //точки выпуклой оболочки
+
+            Shape start = L[0];
+            foreach (Shape point in L) {
+                if (point.X < start.X || (point.X == start.X && point.Y < start.Y)) {
+                    start = point;
+                }
+            }
+
+            List<Shape> hull = new List<Shape>();
+            Shape curr = start;
+
+            while (true) {
+                hull.Add(curr);
+                Shape next = L[0];
+
+                foreach (Shape point in L) {
+                    if (point == curr) continue;
+
+                    float orientation = (next.X - curr.X) * (point.Y - curr.Y) -
+                                        (next.Y - curr.Y) * (point.X - curr.X);
+
+                    if (next == curr || orientation < 0 ||
+                        (orientation == 0 && Distance(curr, point) > Distance(curr, next))) {
+                        next = point;
+                    }
+                }
+
+                curr = next;
+                if (curr == start) break;
+            }
+
+            foreach (Shape shape in hull) {
+                shape.IsHullVertex = true;
+            }
+
+            if (hull.Count >= 2) {
+                PointF[] points = new PointF[hull.Count];
+                for (int i = 0; i < hull.Count; i++) {
+                    points[i] = new PointF(hull[i].X, hull[i].Y);
+                }
+
+                if (g != null) {
+                    g.DrawPolygon(Pens.Blue, points);
+                }
+            }
+        }
+
+        private static float Distance(Shape a, Shape b) {
+            float dx = b.X - a.X;
+            float dy = b.Y - a.Y;
+            return dx * dx + dy * dy;
+        }
+
+        private void DrawPolygonByDifinition(Graphics g) {
             int n = L.Count;
             //if (n < 3) return;
 
-            Pen polygonPen = new Pen(Color.Black, 1);
+            Pen polygonPen = null;
+            if (g != null) {
+                polygonPen = new Pen(Color.Red, 1);
+            }
+
 
             foreach (Shape shape in L) {
                 shape.IsHullVertex = false;
@@ -62,16 +160,21 @@ namespace WinFormsApp {
                         int currSide = Math.Sign(delta);
                         if (currSide == 0) continue;
 
-                        if (side == 0) side = currSide;
-                        else if (currSide != side) {
+                        if (side == 0) {
+                            side = currSide;
+                        } else if (currSide != side) {
                             oneSide = false;
                             break;
                         }
                     }
 
                     if (oneSide) {
-                        if (!convexHull.Contains(L[i])) convexHull.Add(L[i]);
-                        if (!convexHull.Contains(L[j])) convexHull.Add(L[j]);
+                        if (!convexHull.Contains(L[i])) {
+                            convexHull.Add(L[i]);
+                        }
+                        if (!convexHull.Contains(L[j])) {
+                            convexHull.Add(L[j]);
+                        }
                         L[i].IsHullVertex = true;
                         L[j].IsHullVertex = true;
                     }
@@ -94,7 +197,6 @@ namespace WinFormsApp {
 
                                 double b = convexHull[i].Y - k * convexHull[i].X;
                                 delta = L[z].Y - (double)(k * L[z].X + b);
-
                             } else {
                                 delta = L[z].X - (double)convexHull[i].X;
                             }
@@ -102,14 +204,15 @@ namespace WinFormsApp {
                             int currSide = Math.Sign(delta);
                             if (currSide == 0) continue;
 
-                            if (side == 0) side = currSide;
-                            else if (currSide != side) {
+                            if (side == 0) {
+                                side = currSide;
+                            } else if (currSide != side) {
                                 isEdge = false;
                                 break;
                             }
                         }
 
-                        if (isEdge) {
+                        if (isEdge && g != null && polygonPen != null) {
                             g.DrawLine(polygonPen, convexHull[i].X, convexHull[i].Y,
                                       convexHull[j].X, convexHull[j].Y);
                         }
@@ -119,21 +222,20 @@ namespace WinFormsApp {
         }
 
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
-            bool hit = false,
-                 removed = false;
+            bool hit = false;
+            bool removed = false;
 
             foreach (Shape shape in L) {
                 if (shape.IsInside(e.X, e.Y)) {
-                    shape.IsMoved = true;
+                    shape.IsMoving = true;
                     hit = true;
                 }
             }
 
             if (!hit) {
-
-                //if ()
                 Shape newShape;
-                switch (currentShapeType) {
+
+                switch (currShapeType) {
                     case ShapeType.Circle:
                         newShape = new Circle(e.X, e.Y);
                         break;
@@ -149,19 +251,26 @@ namespace WinFormsApp {
                 }
 
                 L.Add(newShape);
-                newShape.IsMoved = true;
+                newShape.IsMoving = true;
+
+                if (L.Count == 1) {
+                    L[0].IsVisible = true;
+                }
 
                 Refresh();
 
                 if (!newShape.IsHullVertex) {
                     foreach (Shape shape in L) {
-                        shape.IsMoved = true;
+                        shape.IsMoving = true;
                     }
+                } else {
+                    newShape.IsVisible = true;
                 }
+
+                Refresh();
             }
 
             if (e.Button == MouseButtons.Right) {
-
                 for (int i = L.Count - 1; i >= 0; i--) {
                     if (L[i].IsInside(e.X, e.Y)) {
                         L.RemoveAt(i);
@@ -180,7 +289,7 @@ namespace WinFormsApp {
 
             List<Shape> movedShapes = new List<Shape>();
             foreach (Shape shape in L) {
-                if (shape.IsMoved) {
+                if (shape.IsMoving) {
                     movedShapes.Add(shape);
                 }
             }
@@ -188,8 +297,11 @@ namespace WinFormsApp {
             if (movedShapes.Count > 0) {
                 Shape firstMoved;
 
-                if (movedShapes.Count > 0 && !movedShapes[movedShapes.Count - 1].IsHullVertex) { firstMoved = movedShapes[movedShapes.Count - 1]; }
-                else { firstMoved = movedShapes[0]; }
+                if (movedShapes.Count > 0 && !movedShapes[movedShapes.Count - 1].IsHullVertex) {
+                    firstMoved = movedShapes[movedShapes.Count - 1];
+                } else {
+                    firstMoved = movedShapes[0];
+                }
 
                 int deltaX = e.X - firstMoved.X;
                 int deltaY = e.Y - firstMoved.Y;
@@ -206,16 +318,17 @@ namespace WinFormsApp {
                 Refresh();
             }
         }
+
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
             foreach (Shape shape in L) {
                 if (shape.IsInside(e.X, e.Y)) {
-                    shape.IsMoved = false;
+                    shape.IsMoving = false;
                 }
             }
 
             if (L.Count > 0 && !L[L.Count - 1].IsHullVertex) {
                 foreach (Shape shape in L) {
-                    shape.IsMoved = false;
+                    shape.IsMoving = false;
                 }
             }
 
@@ -229,33 +342,63 @@ namespace WinFormsApp {
 
             Refresh();
         }
+
         private void Form1_Load(object sender, EventArgs e) { }
 
-        //private void fileToolStripMenuItem_Click(object sender, EventArgs e) { }
-
         private void circleToolStripMenuItem_Click(object sender, EventArgs e) {
-            currentShapeType = ShapeType.Circle;
+            currShapeType = ShapeType.Circle;
             circleToolStripMenuItem.Checked = true;
             triangleToolStripMenuItem.Checked = false;
             squareToolStripMenuItem.Checked = false;
         }
 
         private void triangleToolStripMenuItem_Click(object sender, EventArgs e) {
-            currentShapeType = ShapeType.Triangle;
+            currShapeType = ShapeType.Triangle;
             circleToolStripMenuItem.Checked = false;
             triangleToolStripMenuItem.Checked = true;
             squareToolStripMenuItem.Checked = false;
         }
 
         private void squareToolStripMenuItem_Click(object sender, EventArgs e) {
-            currentShapeType = ShapeType.Square;
+            currShapeType = ShapeType.Square;
             circleToolStripMenuItem.Checked = false;
             triangleToolStripMenuItem.Checked = false;
             squareToolStripMenuItem.Checked = true;
         }
 
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e) {
+        }
 
+        private void byDefinitionToolStripMenuItem_Click(object sender, EventArgs e) {
+            drawingMode = DrawingMode.byDefinition;
+            byDefinitionToolStripMenuItem.Checked = true;
+            jarvisToolStripMenuItem.Checked = false;
+            graphicsToolStripMenuItem.Checked = false;
+
+            Refresh();
+        }
+
+        private void jarvisToolStripMenuItem_Click(object sender, EventArgs e) {
+            drawingMode = DrawingMode.jarvis;
+            byDefinitionToolStripMenuItem.Checked = false;
+            jarvisToolStripMenuItem.Checked = true;
+            graphicsToolStripMenuItem.Checked = false;
+
+            Refresh();
+        }
+
+        public void Tests() {
+            FormChart chartForm = new FormChart();
+            chartForm.Show();
+        }
+
+        private void graphicsToolStripMenuItem_Click(object sender, EventArgs e) {
+            drawingMode = DrawingMode.graphics;
+            byDefinitionToolStripMenuItem.Checked = false;
+            jarvisToolStripMenuItem.Checked = false;
+            graphicsToolStripMenuItem.Checked = true;
+
+            Tests();
         }
     }
 
@@ -263,5 +406,11 @@ namespace WinFormsApp {
         Circle,
         Triangle,
         Square
+    }
+
+    public enum DrawingMode {
+        byDefinition,
+        jarvis,
+        graphics
     }
 }

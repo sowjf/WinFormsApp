@@ -29,21 +29,25 @@
         private void InitializeComponent() {
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
+            newToolStripMenuItem = new ToolStripMenuItem();
+            openToolStripMenuItem = new ToolStripMenuItem();
+            saveToolStripMenuItem = new ToolStripMenuItem();
+            saveAsToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
             shapesToolStripMenuItem = new ToolStripMenuItem();
             circleToolStripMenuItem = new ToolStripMenuItem();
             triangleToolStripMenuItem = new ToolStripMenuItem();
             squareToolStripMenuItem = new ToolStripMenuItem();
-            newToolStripMenuItem = new ToolStripMenuItem();
-            openToolStripMenuItem = new ToolStripMenuItem();
-            saveToolStripMenuItem = new ToolStripMenuItem();
-            saveAsToolStripMenuItem = new ToolStripMenuItem();
+            drawingModeToolStripMenuItem = new ToolStripMenuItem();
+            byDefinitionToolStripMenuItem = new ToolStripMenuItem();
+            jarvisToolStripMenuItem = new ToolStripMenuItem();
+            graphicsToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, shapesToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, shapesToolStripMenuItem, drawingModeToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(1003, 24);
@@ -58,6 +62,30 @@
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(37, 20);
             fileToolStripMenuItem.Text = "File";
+            // 
+            // newToolStripMenuItem
+            // 
+            newToolStripMenuItem.Name = "newToolStripMenuItem";
+            newToolStripMenuItem.Size = new Size(112, 22);
+            newToolStripMenuItem.Text = "New";
+            // 
+            // openToolStripMenuItem
+            // 
+            openToolStripMenuItem.Name = "openToolStripMenuItem";
+            openToolStripMenuItem.Size = new Size(112, 22);
+            openToolStripMenuItem.Text = "Open";
+            // 
+            // saveToolStripMenuItem
+            // 
+            saveToolStripMenuItem.Name = "saveToolStripMenuItem";
+            saveToolStripMenuItem.Size = new Size(112, 22);
+            saveToolStripMenuItem.Text = "Save";
+            // 
+            // saveAsToolStripMenuItem
+            // 
+            saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
+            saveAsToolStripMenuItem.Size = new Size(112, 22);
+            saveAsToolStripMenuItem.Text = "Save as";
             // 
             // editToolStripMenuItem
             // 
@@ -94,29 +122,33 @@
             squareToolStripMenuItem.Text = "Square";
             squareToolStripMenuItem.Click += squareToolStripMenuItem_Click;
             // 
-            // newToolStripMenuItem
+            // drawingModeToolStripMenuItem
             // 
-            newToolStripMenuItem.Name = "newToolStripMenuItem";
-            newToolStripMenuItem.Size = new Size(180, 22);
-            newToolStripMenuItem.Text = "New";
+            drawingModeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { byDefinitionToolStripMenuItem, jarvisToolStripMenuItem, graphicsToolStripMenuItem });
+            drawingModeToolStripMenuItem.Name = "drawingModeToolStripMenuItem";
+            drawingModeToolStripMenuItem.Size = new Size(97, 20);
+            drawingModeToolStripMenuItem.Text = "Drawing mode";
             // 
-            // openToolStripMenuItem
+            // byDefinitionToolStripMenuItem
             // 
-            openToolStripMenuItem.Name = "openToolStripMenuItem";
-            openToolStripMenuItem.Size = new Size(180, 22);
-            openToolStripMenuItem.Text = "Open";
+            byDefinitionToolStripMenuItem.Name = "byDefinitionToolStripMenuItem";
+            byDefinitionToolStripMenuItem.Size = new Size(180, 22);
+            byDefinitionToolStripMenuItem.Text = "By Definition";
+            byDefinitionToolStripMenuItem.Click += byDefinitionToolStripMenuItem_Click;
             // 
-            // saveToolStripMenuItem
+            // jarvisToolStripMenuItem
             // 
-            saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            saveToolStripMenuItem.Size = new Size(180, 22);
-            saveToolStripMenuItem.Text = "Save";
+            jarvisToolStripMenuItem.Name = "jarvisToolStripMenuItem";
+            jarvisToolStripMenuItem.Size = new Size(180, 22);
+            jarvisToolStripMenuItem.Text = "Jarvis";
+            jarvisToolStripMenuItem.Click += jarvisToolStripMenuItem_Click;
             // 
-            // saveAsToolStripMenuItem
+            // graphicsToolStripMenuItem
             // 
-            saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            saveAsToolStripMenuItem.Size = new Size(180, 22);
-            saveAsToolStripMenuItem.Text = "Save as";
+            graphicsToolStripMenuItem.Name = "graphicsToolStripMenuItem";
+            graphicsToolStripMenuItem.Size = new Size(180, 22);
+            graphicsToolStripMenuItem.Text = "Graphics";
+            graphicsToolStripMenuItem.Click += graphicsToolStripMenuItem_Click;
             // 
             // Form1
             // 
@@ -129,7 +161,6 @@
             Text = "Shapes";
             Load += Form1_Load;
             Paint += Form1_Paint;
-            //MouseClick += Form1_MouseClick;
             MouseDown += Form1_MouseDown;
             MouseMove += Form1_MouseMove;
             MouseUp += Form1_MouseUp;
@@ -157,5 +188,9 @@
         private ToolStripMenuItem openToolStripMenuItem;
         private ToolStripMenuItem saveToolStripMenuItem;
         private ToolStripMenuItem saveAsToolStripMenuItem;
+        private ToolStripMenuItem drawingModeToolStripMenuItem;
+        private ToolStripMenuItem byDefinitionToolStripMenuItem;
+        private ToolStripMenuItem jarvisToolStripMenuItem;
+        private ToolStripMenuItem graphicsToolStripMenuItem;
     }
 }

@@ -6,6 +6,7 @@ namespace WinFormsApp {
         protected int x, y, dx, dy;
         protected static int R;
         protected bool IsMov;
+        public bool IsVisible = false;
 
         public bool IsHullVertex { get; set; } // явялется ли вершиной оболочки
 
@@ -21,7 +22,7 @@ namespace WinFormsApp {
         public abstract void Draw(Graphics g);
         public abstract bool IsInside(int pointX, int pointY);
 
-        public bool IsMoved {
+        public bool IsMoving {
             get { return IsMov; }
             set { IsMov = value; }
         }
@@ -37,23 +38,13 @@ namespace WinFormsApp {
         }
     }
 
-    public class Invisible : Shape {
-        public Invisible(int x, int y) : base (x, y) { }
-
-        public override void Draw(Graphics g) {
-            throw new NotImplementedException();
-        }
-
-        public override bool IsInside(int pointX, int pointY) {
-            throw new NotImplementedException();
-        }
-    }
-
     public class Circle : Shape {
         public Circle(int x, int y) : base(x, y) { }
 
         public override void Draw(Graphics g) {
-            g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R);
+            if (IsVisible) {
+                g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R); 
+            }
         }
 
         public override bool IsInside(int pointX, int pointY) {
@@ -65,13 +56,15 @@ namespace WinFormsApp {
         public Triangle(int x, int y) : base(x, y) { }
 
         public override void Draw(Graphics g) {
-            Point[] points = {
-                new Point(x, y - R),
-                new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2),
-                new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2)
-            };
+            if (IsVisible) {
+                Point[] points = {
+                    new Point(x, y - R),
+                    new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2),
+                    new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2)
+                };
 
-            g.DrawPolygon(Pens.Black, points);
+                g.DrawPolygon(Pens.Black, points);
+            }
         }
 
         public override bool IsInside(int pointX, int pointY) {
@@ -101,8 +94,10 @@ namespace WinFormsApp {
         public Square(int x, int y) : base(x, y) { }
 
         public override void Draw(Graphics g) {
-            int side = (int)(R * Math.Sqrt(2));
-            g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
+            if (IsVisible) {
+               int side = (int)(R * Math.Sqrt(2));
+               g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
+            }
         }
 
         public override bool IsInside(int pointX, int pointY) {
