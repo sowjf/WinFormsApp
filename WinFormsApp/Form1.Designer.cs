@@ -42,12 +42,16 @@
             byDefinitionToolStripMenuItem = new ToolStripMenuItem();
             jarvisToolStripMenuItem = new ToolStripMenuItem();
             graphicsToolStripMenuItem = new ToolStripMenuItem();
+            settingsToolStripMenuItem = new ToolStripMenuItem();
+            editToolStripMenuItem1 = new ToolStripMenuItem();
+            settingsToolStripMenuItem1 = new ToolStripMenuItem();
+            radiusToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, shapesToolStripMenuItem, drawingModeToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, editToolStripMenuItem, shapesToolStripMenuItem, drawingModeToolStripMenuItem, settingsToolStripMenuItem, settingsToolStripMenuItem1 });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(1003, 24);
@@ -132,23 +136,47 @@
             // byDefinitionToolStripMenuItem
             // 
             byDefinitionToolStripMenuItem.Name = "byDefinitionToolStripMenuItem";
-            byDefinitionToolStripMenuItem.Size = new Size(180, 22);
+            byDefinitionToolStripMenuItem.Size = new Size(142, 22);
             byDefinitionToolStripMenuItem.Text = "By Definition";
             byDefinitionToolStripMenuItem.Click += byDefinitionToolStripMenuItem_Click;
             // 
             // jarvisToolStripMenuItem
             // 
             jarvisToolStripMenuItem.Name = "jarvisToolStripMenuItem";
-            jarvisToolStripMenuItem.Size = new Size(180, 22);
+            jarvisToolStripMenuItem.Size = new Size(142, 22);
             jarvisToolStripMenuItem.Text = "Jarvis";
             jarvisToolStripMenuItem.Click += jarvisToolStripMenuItem_Click;
             // 
             // graphicsToolStripMenuItem
             // 
             graphicsToolStripMenuItem.Name = "graphicsToolStripMenuItem";
-            graphicsToolStripMenuItem.Size = new Size(180, 22);
+            graphicsToolStripMenuItem.Size = new Size(142, 22);
             graphicsToolStripMenuItem.Text = "Graphics";
             graphicsToolStripMenuItem.Click += graphicsToolStripMenuItem_Click;
+            // 
+            // settingsToolStripMenuItem
+            // 
+            settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+            settingsToolStripMenuItem.Size = new Size(12, 20);
+            // 
+            // editToolStripMenuItem1
+            // 
+            editToolStripMenuItem1.Name = "editToolStripMenuItem1";
+            editToolStripMenuItem1.Size = new Size(32, 19);
+            // 
+            // settingsToolStripMenuItem1
+            // 
+            settingsToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { radiusToolStripMenuItem });
+            settingsToolStripMenuItem1.Name = "settingsToolStripMenuItem1";
+            settingsToolStripMenuItem1.Size = new Size(61, 20);
+            settingsToolStripMenuItem1.Text = "Settings";
+            // 
+            // radiusToolStripMenuItem
+            // 
+            radiusToolStripMenuItem.Name = "radiusToolStripMenuItem";
+            radiusToolStripMenuItem.Size = new Size(180, 22);
+            radiusToolStripMenuItem.Text = "Radius";
+            radiusToolStripMenuItem.Click += radiusToolStripMenuItem_Click;
             // 
             // Form1
             // 
@@ -192,5 +220,9 @@
         private ToolStripMenuItem byDefinitionToolStripMenuItem;
         private ToolStripMenuItem jarvisToolStripMenuItem;
         private ToolStripMenuItem graphicsToolStripMenuItem;
+        private ToolStripMenuItem settingsToolStripMenuItem;
+        private ToolStripMenuItem editToolStripMenuItem1;
+        private ToolStripMenuItem settingsToolStripMenuItem1;
+        private ToolStripMenuItem radiusToolStripMenuItem;
     }
 }

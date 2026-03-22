@@ -2,6 +2,16 @@
 using System.Drawing;
 
 namespace WinFormsApp {
+    public class RadiusEventArgs : EventArgs {
+        public int OldRadius { get; }
+        public int NewRadius { get; }
+
+        public RadiusEventArgs(int oldRadius, int newRadius) {
+            OldRadius = oldRadius;
+            NewRadius = newRadius;
+        }
+    }
+
     public abstract class Shape {
         protected int x, y, dx, dy;
         protected static int R;
@@ -39,11 +49,28 @@ namespace WinFormsApp {
     }
 
     public class Circle : Shape {
+        public event EventHandler<RadiusEventArgs> RadiusChanged;
+
         public Circle(int x, int y) : base(x, y) { }
+
+        public int Radius {
+            get { return R; }
+            set {
+                if (R != value && value > 0) {
+                    int oldRadius = R;
+                    R = value;
+                    OnRadiusChanged(new RadiusEventArgs(oldRadius, R));
+                }
+            }
+        }
+
+        protected virtual void OnRadiusChanged(RadiusEventArgs e) {
+            RadiusChanged?.Invoke(this, e);
+        }
 
         public override void Draw(Graphics g) {
             if (IsVisible) {
-                g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R); 
+                g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R);
             }
         }
 
@@ -80,7 +107,7 @@ namespace WinFormsApp {
                    nb = Math.Sqrt((pointX - p2.X) * (pointX - p2.X) + (pointY - p2.Y) * (pointY - p2.Y)),
                    nc = Math.Sqrt((pointX - p3.X) * (pointX - p3.X) + (pointY - p3.Y) * (pointY - p3.Y));
 
-            double p = (ab +  bc + ca) / 2;
+            double p = (ab + bc + ca) / 2;
 
             double P1 = (ab + nb + na) / 2,
                    P2 = (bc + nb + nc) / 2,
@@ -95,8 +122,8 @@ namespace WinFormsApp {
 
         public override void Draw(Graphics g) {
             if (IsVisible) {
-               int side = (int)(R * Math.Sqrt(2));
-               g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
+                int side = (int)(R * Math.Sqrt(2));
+                g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
             }
         }
 

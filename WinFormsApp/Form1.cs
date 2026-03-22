@@ -1,33 +1,60 @@
+
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Numerics;
-using WinFormsApp;
+using System.Windows.Forms;
 using WinFormsApp1;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace WinFormsApp {
     public partial class Form1 : Form {
         public List<Shape> L = new List<Shape>();
         private ShapeType currShapeType = ShapeType.Circle;
         private DrawingMode drawingMode = DrawingMode.byDefinition;
+        private Label radiusLabel;
+        Form2 form2 = new Form2();
 
         public Form1() {
             InitializeComponent();
             circleToolStripMenuItem.Checked = true;
             byDefinitionToolStripMenuItem.Checked = true;
 
-            //int centerX = ClientSize.Width / 2;
-            //int centerY = ClientSize.Height / 2;
-            //L.Add(new Circle(centerX - 50, centerY - 50));
-            //L.Add(new Triangle(centerX + 50, centerY - 50));
-            //L.Add(new Square(centerX, centerY + 50));
+            //radiusLabel = new Label {
+            //    Location = new Point(10, 30),
+            //    Size = new Size(200, 20),
+            //    Text = "Radius: 25"
+            //};
+            //this.Controls.Add(radiusLabel);
 
             this.DoubleBuffered = true;
         }
 
-        private void Form1_Paint(object sender, PaintEventArgs e) {
+        private void Circle_RadiusChanged(object sender, RadiusEventArgs e) {
+            if (sender is Circle circle) {
+                //radiusLabel.Text = $"Radius changed: {e.OldRadius} -> {e.NewRadius}";
+                System.Diagnostics.Debug.WriteLine($"Radius% {e.OldRadius} -> {e.NewRadius}");
+                Refresh();
+            }
+        }
 
+        private int OnRadiusChanged(int s, bool b) {
+            //radiusLabel.Text = $"Form2: radius={s}, flag={b}";
+
+            foreach (Shape shape in L) {
+                if (shape is Circle circle) {
+                    int newRadius = s;
+                    if (newRadius > 0) {
+                        circle.Radius = newRadius;
+                    }
+                    break;
+                }
+            }
+
+            Refresh();
+            return s;
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e) {
             switch (drawingMode) {
                 case DrawingMode.byDefinition:
                     DrawPolygonByDifinition(e.Graphics);
@@ -37,8 +64,6 @@ namespace WinFormsApp {
                     break;
                 case DrawingMode.graphics:
                     break;
-                //default:
-                //    break;
             }
 
             foreach (Shape shape in L) {
@@ -61,16 +86,14 @@ namespace WinFormsApp {
         }
 
         public void DrawPolygonJarvis(Graphics g) {
-            //if (L.Count < 3) return;
-
+            if (L.Count < 1) return;
             Pen polygonPen = new Pen(Color.Blue, 1);
 
             foreach (Shape shape in L) {
                 shape.IsHullVertex = false;
             }
 
-            List<Shape> convexHull = new List<Shape>(); //точки выпуклой оболочки
-
+            List<Shape> convexHull = new List<Shape>();
             Shape start = L[0];
             foreach (Shape point in L) {
                 if (point.X < start.X || (point.X == start.X && point.Y < start.Y)) {
@@ -125,19 +148,16 @@ namespace WinFormsApp {
 
         private void DrawPolygonByDifinition(Graphics g) {
             int n = L.Count;
-            //if (n < 3) return;
-
             Pen polygonPen = null;
             if (g != null) {
                 polygonPen = new Pen(Color.Red, 1);
             }
 
-
             foreach (Shape shape in L) {
                 shape.IsHullVertex = false;
             }
 
-            List<Shape> convexHull = new List<Shape>(); //точки выпуклой оболочки
+            List<Shape> convexHull = new List<Shape>();
 
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
@@ -151,7 +171,6 @@ namespace WinFormsApp {
                         if (L[i].X != L[j].X) {
                             double k = (double)(L[i].Y - L[j].Y) / (L[i].X - L[j].X);
                             double b = L[i].Y - k * L[i].X;
-
                             delta = L[z].Y - (double)(k * L[z].X + b);
                         } else {
                             delta = L[z].X - (double)L[i].X;
@@ -194,7 +213,6 @@ namespace WinFormsApp {
                             if (convexHull[i].X != convexHull[j].X) {
                                 double k = (double)(convexHull[i].Y - convexHull[j].Y) /
                                           (convexHull[i].X - convexHull[j].X);
-
                                 double b = convexHull[i].Y - k * convexHull[i].X;
                                 delta = L[z].Y - (double)(k * L[z].X + b);
                             } else {
@@ -222,55 +240,63 @@ namespace WinFormsApp {
         }
 
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
-            bool hit = false;
             bool removed = false;
 
-            foreach (Shape shape in L) {
-                if (shape.IsInside(e.X, e.Y)) {
-                    shape.IsMoving = true;
-                    hit = true;
-                }
-            }
+            if (e.Button == MouseButtons.Left) {
+                bool hit = false;
 
-            if (!hit) {
-                Shape newShape;
-
-                switch (currShapeType) {
-                    case ShapeType.Circle:
-                        newShape = new Circle(e.X, e.Y);
-                        break;
-                    case ShapeType.Triangle:
-                        newShape = new Triangle(e.X, e.Y);
-                        break;
-                    case ShapeType.Square:
-                        newShape = new Square(e.X, e.Y);
-                        break;
-                    default:
-                        newShape = new Circle(e.X, e.Y);
-                        break;
-                }
-
-                L.Add(newShape);
-                newShape.IsMoving = true;
-
-                if (L.Count == 1) {
-                    L[0].IsVisible = true;
-                }
-
-                Refresh();
-
-                if (!newShape.IsHullVertex) {
-                    foreach (Shape shape in L) {
+                foreach (Shape shape in L) {
+                    if (shape.IsInside(e.X, e.Y)) {
                         shape.IsMoving = true;
+                        hit = true;
                     }
-                } else {
-                    newShape.IsVisible = true;
                 }
 
-                Refresh();
-            }
+                if (!hit) {
+                    Shape newShape;
 
-            if (e.Button == MouseButtons.Right) {
+                    switch (currShapeType) {
+                        case ShapeType.Circle:
+                            newShape = new Circle(e.X, e.Y);
+                            if (newShape is Circle circle) {
+                                circle.RadiusChanged += Circle_RadiusChanged;
+                            }
+                            break;
+                        case ShapeType.Triangle:
+                            newShape = new Triangle(e.X, e.Y);
+                            break;
+                        case ShapeType.Square:
+                            newShape = new Square(e.X, e.Y);
+                            break;
+                        default:
+                            newShape = new Circle(e.X, e.Y);
+                            break;
+                    }
+
+                    L.Add(newShape);
+                    newShape.IsMoving = true;
+
+                    if (L.Count == 1) {
+                        L[0].IsVisible = true;
+                    }
+
+                    Refresh();
+
+                    if (!newShape.IsHullVertex) {
+                        foreach (Shape shape in L) {
+                            shape.IsMoving = true;
+                        }
+                    } else {
+                        newShape.IsVisible = true;
+                    }
+
+                    Refresh();
+                }
+
+                if (removed) {
+                    Refresh();
+                }
+            } else if (e.Button == MouseButtons.Right) {
                 for (int i = L.Count - 1; i >= 0; i--) {
                     if (L[i].IsInside(e.X, e.Y)) {
                         L.RemoveAt(i);
@@ -278,45 +304,44 @@ namespace WinFormsApp {
                     }
                 }
             }
-
-            if (removed) {
-                Refresh();
-            }
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e) {
-            bool moved = false;
+            if (e.Button == MouseButtons.Left) {
+                bool moved = false;
+                List<Shape> movedShapes = new List<Shape>();
 
-            List<Shape> movedShapes = new List<Shape>();
-            foreach (Shape shape in L) {
-                if (shape.IsMoving) {
-                    movedShapes.Add(shape);
-                }
-            }
-
-            if (movedShapes.Count > 0) {
-                Shape firstMoved;
-
-                if (movedShapes.Count > 0 && !movedShapes[movedShapes.Count - 1].IsHullVertex) {
-                    firstMoved = movedShapes[movedShapes.Count - 1];
-                } else {
-                    firstMoved = movedShapes[0];
+                foreach (Shape shape in L) {
+                    if (shape.IsMoving) {
+                        movedShapes.Add(shape);
+                    }
                 }
 
-                int deltaX = e.X - firstMoved.X;
-                int deltaY = e.Y - firstMoved.Y;
+                if (movedShapes.Count > 0) {
+                    Shape firstMoved;
 
-                foreach (Shape shape in movedShapes) {
-                    shape.X += deltaX;
-                    shape.Y += deltaY;
+                    if (movedShapes.Count > 0 && !movedShapes[movedShapes.Count - 1].IsHullVertex) {
+                        firstMoved = movedShapes[movedShapes.Count - 1];
+                    } else {
+                        firstMoved = movedShapes[0];
+                    }
+
+                    int deltaX = e.X - firstMoved.X;
+                    int deltaY = e.Y - firstMoved.Y;
+
+                    foreach (Shape shape in movedShapes) {
+                        shape.X += deltaX;
+                        shape.Y += deltaY;
+                    }
+
+                    moved = true;
                 }
 
-                moved = true;
+                if (moved) {
+                    Refresh();
+                }
             }
-
-            if (moved) {
-                Refresh();
-            }
+            return;
         }
 
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
@@ -366,15 +391,13 @@ namespace WinFormsApp {
             squareToolStripMenuItem.Checked = true;
         }
 
-        private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e) {
-        }
+        private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e) { }
 
         private void byDefinitionToolStripMenuItem_Click(object sender, EventArgs e) {
             drawingMode = DrawingMode.byDefinition;
             byDefinitionToolStripMenuItem.Checked = true;
             jarvisToolStripMenuItem.Checked = false;
             graphicsToolStripMenuItem.Checked = false;
-
             Refresh();
         }
 
@@ -383,7 +406,6 @@ namespace WinFormsApp {
             byDefinitionToolStripMenuItem.Checked = false;
             jarvisToolStripMenuItem.Checked = true;
             graphicsToolStripMenuItem.Checked = false;
-
             Refresh();
         }
 
@@ -397,8 +419,29 @@ namespace WinFormsApp {
             byDefinitionToolStripMenuItem.Checked = false;
             jarvisToolStripMenuItem.Checked = false;
             graphicsToolStripMenuItem.Checked = true;
-
             Tests();
+        }
+
+        private void radiusToolStripMenuItem_Click(object sender, EventArgs e) {
+            Circle circle = null;
+            foreach (Shape shape in L) {
+                if (shape is Circle c) {
+                    circle = c;
+                    break;
+                }
+            }
+            if (form2 == null || form2.IsDisposed) {
+                form2 = new Form2();
+            } else if (!form2.IsDisposed) {
+                form2.Activate();
+            }
+
+            if (form2.WindowState == FormWindowState.Minimized) {
+                form2.WindowState = FormWindowState.Normal;
+            }
+            if (circle != null) form2.SetRadius(circle.Radius);
+            form2.RadiusChanged += OnRadiusChanged;
+            form2.Show();
         }
     }
 

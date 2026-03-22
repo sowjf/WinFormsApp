@@ -24,11 +24,11 @@ namespace WinFormsApp1 {
             jarvisResults.Clear();
             definitionResults.Clear();
 
-            int points = 400;
+            int points = 500;
 
             List<int> testCounts = new List<int>();
             testCounts.Add(1);
-            for (int i = 1; i < 10; i++) {
+            for (int i = 1; i < 20; i++) {
                 testCounts.Add(i * points);
             }
 
