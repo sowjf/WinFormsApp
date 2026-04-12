@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using WinFormsApp1;
 using System.IO;
+
 namespace WinFormsApp {
     public partial class Form1 : Form {
         public List<Shape> L = new List<Shape>();
@@ -18,6 +19,9 @@ namespace WinFormsApp {
         private bool isPlaying = false;
         private Random random = new Random();
         private Color selectedColor = Color.Black;
+
+        private int[] customColors = null;
+
         public Form1() {
             InitializeComponent();
             circleToolStripMenuItem.Checked = true;
@@ -27,18 +31,44 @@ namespace WinFormsApp {
             movementTimer.Interval = 50;
             movementTimer.Tick += MovementTimer_Tick;
         }
+
+        private void colorToolStripMenuItem1_Click(object sender, EventArgs e) {
+            ColorDialog colorDialog = new ColorDialog();
+
+            colorDialog.Color = selectedColor;
+            colorDialog.FullOpen = false;
+
+            if (customColors != null) {
+                colorDialog.CustomColors = (int[])customColors.Clone();
+            }
+
+            if (colorDialog.ShowDialog() == DialogResult.OK) {
+                selectedColor = colorDialog.Color;
+
+                foreach (Shape shape in L) {
+                    shape.Color = selectedColor;
+                }
+
+                customColors = (int[])colorDialog.CustomColors.Clone();
+
+                Refresh();
+            }
+        }
+
         private void saveToolStripMenuItem_Click(object sender, EventArgs e) {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream fs = new FileStream("state.bin", FileMode.Create, FileAccess.Write);
             bf.Serialize(fs, L);
             fs.Close();
         }
+
         private void openToolStripMenuItem_Click(object sender, EventArgs e) {
             BinaryFormatter bf = new BinaryFormatter();
             FileStream fs = new FileStream("state.bin", FileMode.Open, FileAccess.Read);
             L = (List<Shape>)bf.Deserialize(fs);
             fs.Close();
         }
+
         private void MovementTimer_Tick(object sender, EventArgs e) {
             if (!isPlaying) return;
             foreach (Shape shape in L) {
@@ -47,37 +77,28 @@ namespace WinFormsApp {
             }
             Refresh();
         }
+
         private void toolStripButton1_Click(object sender, EventArgs e) {
             isPlaying = true;
             movementTimer.Start();
             playToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem.Enabled = true;
         }
+
         private void toolStripButton2_Click(object sender, EventArgs e) {
             isPlaying = false;
             movementTimer.Stop();
             playToolStripMenuItem.Enabled = true;
             stopToolStripMenuItem.Enabled = false;
         }
-        private void colorToolStripMenuItem1_Click(object sender, EventArgs e) {
-            ColorDialog colorDialog = new ColorDialog();
-            colorDialog.Color = selectedColor;
-            if (colorDialog.ShowDialog() == DialogResult.OK) {
-                Console.WriteLine(colorDialog.Color);
-                selectedColor = colorDialog.Color;
 
-                foreach (Shape shape in L) {
-                    shape.Color = selectedColor;
-                }
-                Refresh();
-            }
-        }
         private void Circle_RadiusChanged(object sender, RadiusEventArgs e) {
             if (sender is Circle circle) {
                 System.Diagnostics.Debug.WriteLine($"Radius% {e.OldRadius} -> {e.NewRadius}");
                 Refresh();
             }
         }
+
         private int OnRadiusChanged(int s, bool b) {
             foreach (Shape shape in L) {
                 if (shape is Circle circle) {
@@ -91,6 +112,7 @@ namespace WinFormsApp {
             Refresh();
             return s;
         }
+
         private void Form1_Paint(object sender, PaintEventArgs e) {
             switch (drawingMode) {
                 case DrawingMode.byDefinition:
@@ -106,18 +128,21 @@ namespace WinFormsApp {
                 shape.Draw(e.Graphics);
             }
         }
+
         public double TestJarvis() {
             var stopwatch = Stopwatch.StartNew();
             DrawPolygonJarvis(null);
             stopwatch.Stop();
             return stopwatch.Elapsed.TotalMilliseconds;
         }
+
         public double TestDefinition() {
             var stopwatch = Stopwatch.StartNew();
             DrawPolygonByDifinition(null);
             stopwatch.Stop();
             return stopwatch.Elapsed.TotalMilliseconds;
         }
+
         public void DrawPolygonJarvis(Graphics g) {
             if (L.Count < 1) return;
             Pen polygonPen = new Pen(Color.Blue, 1);
@@ -139,9 +164,9 @@ namespace WinFormsApp {
                 foreach (Shape point in L) {
                     if (point == curr) continue;
                     float orientation = (next.X - curr.X) * (point.Y - curr.Y) -
-                    (next.Y - curr.Y) * (point.X - curr.X);
+                                        (next.Y - curr.Y) * (point.X - curr.X);
                     if (next == curr || orientation < 0 ||
-                    (orientation == 0 && Distance(curr, point) > Distance(curr, next))) {
+                        (orientation == 0 && Distance(curr, point) > Distance(curr, next))) {
                         next = point;
                     }
                 }
@@ -161,11 +186,13 @@ namespace WinFormsApp {
                 }
             }
         }
+
         private static float Distance(Shape a, Shape b) {
             float dx = b.X - a.X;
             float dy = b.Y - a.Y;
             return dx * dx + dy * dy;
         }
+
         private void DrawPolygonByDifinition(Graphics g) {
             int n = L.Count;
             Pen polygonPen = null;
@@ -221,7 +248,7 @@ namespace WinFormsApp {
                             double delta;
                             if (convexHull[i].X != convexHull[j].X) {
                                 double k = (double)(convexHull[i].Y - convexHull[j].Y) /
-                                (convexHull[i].X - convexHull[j].X);
+                                          (convexHull[i].X - convexHull[j].X);
                                 double b = convexHull[i].Y - k * convexHull[i].X;
                                 delta = L[z].Y - (double)(k * L[z].X + b);
                             } else {
@@ -238,12 +265,13 @@ namespace WinFormsApp {
                         }
                         if (isEdge && g != null && polygonPen != null) {
                             g.DrawLine(polygonPen, convexHull[i].X, convexHull[i].Y,
-                            convexHull[j].X, convexHull[j].Y);
+                                      convexHull[j].X, convexHull[j].Y);
                         }
                     }
                 }
             }
         }
+
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
             bool removed = false;
             if (e.Button == MouseButtons.Left) {
@@ -301,6 +329,7 @@ namespace WinFormsApp {
                 }
             }
         }
+
         private void Form1_MouseMove(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 bool moved = false;
@@ -331,6 +360,7 @@ namespace WinFormsApp {
             }
             return;
         }
+
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
             foreach (Shape shape in L) {
                 if (shape.IsInside(e.X, e.Y)) {
@@ -351,26 +381,32 @@ namespace WinFormsApp {
             }
             Refresh();
         }
+
         private void Form1_Load(object sender, EventArgs e) { }
+
         private void circleToolStripMenuItem_Click(object sender, EventArgs e) {
             currShapeType = ShapeType.Circle;
             circleToolStripMenuItem.Checked = true;
             triangleToolStripMenuItem.Checked = false;
             squareToolStripMenuItem.Checked = false;
         }
+
         private void triangleToolStripMenuItem_Click(object sender, EventArgs e) {
             currShapeType = ShapeType.Triangle;
             circleToolStripMenuItem.Checked = false;
             triangleToolStripMenuItem.Checked = true;
             squareToolStripMenuItem.Checked = false;
         }
+
         private void squareToolStripMenuItem_Click(object sender, EventArgs e) {
             currShapeType = ShapeType.Square;
             circleToolStripMenuItem.Checked = false;
             triangleToolStripMenuItem.Checked = false;
             squareToolStripMenuItem.Checked = true;
         }
+
         private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e) { }
+
         private void byDefinitionToolStripMenuItem_Click(object sender, EventArgs e) {
             drawingMode = DrawingMode.byDefinition;
             byDefinitionToolStripMenuItem.Checked = true;
@@ -378,6 +414,7 @@ namespace WinFormsApp {
             graphicsToolStripMenuItem.Checked = false;
             Refresh();
         }
+
         private void jarvisToolStripMenuItem_Click(object sender, EventArgs e) {
             drawingMode = DrawingMode.jarvis;
             byDefinitionToolStripMenuItem.Checked = false;
@@ -385,10 +422,12 @@ namespace WinFormsApp {
             graphicsToolStripMenuItem.Checked = false;
             Refresh();
         }
+
         public void Tests() {
             FormChart chartForm = new FormChart();
             chartForm.Show();
         }
+
         private void graphicsToolStripMenuItem_Click(object sender, EventArgs e) {
             drawingMode = DrawingMode.graphics;
             byDefinitionToolStripMenuItem.Checked = false;
@@ -396,6 +435,7 @@ namespace WinFormsApp {
             graphicsToolStripMenuItem.Checked = true;
             Tests();
         }
+
         private void radiusToolStripMenuItem_Click(object sender, EventArgs e) {
             Circle circle = null;
             foreach (Shape shape in L) {
@@ -417,11 +457,13 @@ namespace WinFormsApp {
             form2.Show();
         }
     }
+
     public enum ShapeType {
         Circle,
         Triangle,
         Square
     }
+
     public enum DrawingMode {
         byDefinition,
         jarvis,
