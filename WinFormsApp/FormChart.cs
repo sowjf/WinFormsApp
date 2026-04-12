@@ -24,7 +24,7 @@ namespace WinFormsApp1 {
             jarvisResults.Clear();
             definitionResults.Clear();
 
-            int points = 500;
+            int points = 200;
 
             List<int> testCounts = new List<int>();
             testCounts.Add(1);

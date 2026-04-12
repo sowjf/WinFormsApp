@@ -13,12 +13,14 @@ namespace WinFormsApp {
     }
 
     public abstract class Shape {
-        protected int x, y, dx, dy;
+        protected int x, y;
         protected static int R;
         protected bool IsMov;
         public bool IsVisible = false;
 
-        public bool IsHullVertex { get; set; } // явялется ли вершиной оболочки
+        public Color Color { get; set; } = Color.Black;
+
+        public bool IsHullVertex { get; set; }
 
         static Shape() {
             R = 25;
@@ -70,7 +72,9 @@ namespace WinFormsApp {
 
         public override void Draw(Graphics g) {
             if (IsVisible) {
-                g.DrawEllipse(Pens.Black, x - R, y - R, 2 * R, 2 * R);
+                SolidBrush brush = new SolidBrush(Color);
+                g.FillEllipse(brush, x - R, y - R, 2 * R, 2 * R);
+                brush.Dispose();
             }
         }
 
@@ -90,14 +94,16 @@ namespace WinFormsApp {
                     new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2)
                 };
 
-                g.DrawPolygon(Pens.Black, points);
+                SolidBrush brush = new SolidBrush(Color);
+                g.FillPolygon(brush, points);
+                brush.Dispose();
             }
         }
 
         public override bool IsInside(int pointX, int pointY) {
-            Point p1 = new Point(x, y - R); // up vertex
-            Point p2 = new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down left vertex
-            Point p3 = new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2); // down right vertex
+            Point p1 = new Point(x, y - R);
+            Point p2 = new Point(x - (int)(R * (Math.Sqrt(3) / 2)), y + R / 2);
+            Point p3 = new Point(x + (int)(R * (Math.Sqrt(3) / 2)), y + R / 2);
 
             double ab = Math.Sqrt((p2.X - p1.X) * (p2.X - p1.X) + (p2.Y - p1.Y) * (p2.Y - p1.Y));
             double bc = Math.Sqrt((p3.X - p2.X) * (p3.X - p2.X) + (p3.Y - p2.Y) * (p3.Y - p2.Y));
@@ -123,7 +129,9 @@ namespace WinFormsApp {
         public override void Draw(Graphics g) {
             if (IsVisible) {
                 int side = (int)(R * Math.Sqrt(2));
-                g.DrawRectangle(Pens.Black, x - side / 2, y - side / 2, side, side);
+                SolidBrush brush = new SolidBrush(Color);
+                g.FillRectangle(brush, x - side / 2, y - side / 2, side, side);
+                brush.Dispose();
             }
         }
 
