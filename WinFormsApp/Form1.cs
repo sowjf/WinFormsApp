@@ -3,24 +3,26 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
 using System.Windows.Forms;
 using WinFormsApp1;
-using System.IO;
 
 namespace WinFormsApp {
     public partial class Form1 : Form {
         public List<Shape> L = new List<Shape>();
         private ShapeType currShapeType = ShapeType.Circle;
         private DrawingMode drawingMode = DrawingMode.byDefinition;
-        private Label radiusLabel;
         Form2 form2 = new Form2();
         private System.Windows.Forms.Timer movementTimer;
         private bool isPlaying = false;
         private Random random = new Random();
         private Color selectedColor = Color.Black;
-
+        private string currentFilePath = null;
+        private bool isFileModified = false;
         private int[] customColors = null;
+        private int currentSize = 25;
 
         public Form1() {
             InitializeComponent();
@@ -50,23 +52,252 @@ namespace WinFormsApp {
                 }
 
                 customColors = (int[])colorDialog.CustomColors.Clone();
-
+                isFileModified = true;
                 Refresh();
             }
         }
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e) {
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream fs = new FileStream("state.bin", FileMode.Create, FileAccess.Write);
-            bf.Serialize(fs, L);
-            fs.Close();
+            if (L.Count == 0) {
+                MessageBox.Show("Shapes haven't found!",
+                    "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(currentFilePath)) {
+                SaveToFile(currentFilePath);
+            } else {
+                SaveAs();
+            }
+        }
+
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (L.Count == 0) {
+                MessageBox.Show("Shapes haven't found!",
+                    "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            SaveAs();
+        }
+
+        private void SaveAs() {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog()) {
+                saveFileDialog.Filter = "Binary files (*.bin)|*.bin|JSON files (*.json)|*.json|All files (*.*)|*.*";
+                saveFileDialog.FilterIndex = 1;
+                saveFileDialog.RestoreDirectory = true;
+                saveFileDialog.DefaultExt = "bin";
+                saveFileDialog.Title = "Save as...";
+
+                if (!string.IsNullOrEmpty(currentFilePath)) {
+                    saveFileDialog.FileName = Path.GetFileName(currentFilePath);
+                    saveFileDialog.InitialDirectory = Path.GetDirectoryName(currentFilePath);
+                } else {
+                    saveFileDialog.FileName = "shapes.bin";
+                }
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+                    currentFilePath = saveFileDialog.FileName;
+                    string extension = Path.GetExtension(currentFilePath).ToLower();
+                    if (extension == ".json") {
+                        SaveToJsonFile(currentFilePath);
+                    } else {
+                        SaveToFile(currentFilePath);
+                    }
+                }
+            }
+        }
+
+        private void SaveToFile(string filePath) {
+            try {
+                BinaryFormatter bf = new BinaryFormatter();
+                using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write)) {
+                    var saveData = new SaveData {
+                        Shapes = L,
+                        SelectedColor = selectedColor,
+                        CustomColors = customColors,
+                        DefaultSize = currentSize
+                    };
+                    bf.Serialize(fs, saveData);
+                }
+                isFileModified = false;
+                UpdateFormTitle();
+                MessageBox.Show($"File has been saved:\n{filePath}", "Info",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } catch (Exception ex) {
+                MessageBox.Show($"Error: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void SaveToJsonFile(string filePath) {
+            try {
+                var saveData = new JsonSaveData {
+                    Shapes = new List<JsonShape>(),
+                    SelectedColor = selectedColor.ToArgb(),
+                    CustomColors = customColors,
+                    DefaultSize = currentSize
+                };
+
+                foreach (var shape in L) {
+                    var jsonShape = new JsonShape {
+                        Type = shape.GetType().Name,
+                        X = shape.X,
+                        Y = shape.Y,
+                        Size = shape.Size,
+                        Color = shape.Color.ToArgb(),
+                        IsVisible = shape.IsVisible
+                    };
+                    saveData.Shapes.Add(jsonShape);
+                }
+
+                string jsonString = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(filePath, jsonString);
+
+                isFileModified = false;
+                UpdateFormTitle();
+                MessageBox.Show($"File has been saved as JSON:\n{filePath}", "Info",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } catch (Exception ex) {
+                MessageBox.Show($"Error saving JSON: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e) {
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream fs = new FileStream("state.bin", FileMode.Open, FileAccess.Read);
-            L = (List<Shape>)bf.Deserialize(fs);
-            fs.Close();
+            if (isFileModified && L.Count > 0) {
+                DialogResult result = MessageBox.Show("There are unsaved changes. Save before uploading?",
+                    "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+
+                if (result == DialogResult.Yes) {
+                    saveToolStripMenuItem_Click(sender, e);
+                    if (isFileModified) return;
+                } else if (result == DialogResult.Cancel) {
+                    return;
+                }
+            }
+
+            using (OpenFileDialog openFileDialog = new OpenFileDialog()) {
+                openFileDialog.Filter = "Binary files (*.bin)|*.bin|JSON files (*.json)|*.json|All files (*.*)|*.*";
+                openFileDialog.FilterIndex = 1;
+                openFileDialog.RestoreDirectory = true;
+                openFileDialog.Title = "Choose file to load";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK) {
+                    string extension = Path.GetExtension(openFileDialog.FileName).ToLower();
+                    if (extension == ".json") {
+                        LoadFromJsonFile(openFileDialog.FileName);
+                    } else {
+                        LoadFromFile(openFileDialog.FileName);
+                    }
+                }
+            }
+        }
+
+        private void LoadFromFile(string filePath) {
+            try {
+                if (!File.Exists(filePath)) {
+                    MessageBox.Show($"File hasn't found:\n{filePath}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                BinaryFormatter bf = new BinaryFormatter();
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read)) {
+                    var saveData = (SaveData)bf.Deserialize(fs);
+                    L = saveData.Shapes;
+                    selectedColor = saveData.SelectedColor;
+                    customColors = saveData.CustomColors;
+                    if (saveData.DefaultSize > 0) {
+                        currentSize = saveData.DefaultSize;
+                    }
+                }
+
+                foreach (Shape shape in L) {
+                    if (shape is Circle circle) {
+                        circle.RadiusChanged += Circle_RadiusChanged;
+                    }
+                    shape.Color = selectedColor;
+                    shape.IsVisible = true;
+                }
+
+                currentFilePath = filePath;
+                isFileModified = false;
+                UpdateFormTitle();
+                Refresh();
+                MessageBox.Show($"Loaded successfully from file:\n{filePath}\nShapes: {L.Count}",
+                    "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } catch (Exception ex) {
+                MessageBox.Show($"Error to load: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadFromJsonFile(string filePath) {
+            try {
+                if (!File.Exists(filePath)) {
+                    MessageBox.Show($"File hasn't found:\n{filePath}", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                string jsonString = File.ReadAllText(filePath);
+                var saveData = JsonSerializer.Deserialize<JsonSaveData>(jsonString);
+
+                L.Clear();
+                selectedColor = Color.FromArgb(saveData.SelectedColor);
+                customColors = saveData.CustomColors;
+                if (saveData.DefaultSize > 0) {
+                    currentSize = saveData.DefaultSize;
+                }
+
+                foreach (var jsonShape in saveData.Shapes) {
+                    Shape shape = null;
+                    switch (jsonShape.Type) {
+                        case "Circle":
+                            var circle = new Circle(jsonShape.X, jsonShape.Y);
+                            circle.Size = jsonShape.Size;
+                            circle.RadiusChanged += Circle_RadiusChanged;
+                            shape = circle;
+                            break;
+                        case "Triangle":
+                            shape = new Triangle(jsonShape.X, jsonShape.Y);
+                            shape.Size = jsonShape.Size;
+                            break;
+                        case "Square":
+                            shape = new Square(jsonShape.X, jsonShape.Y);
+                            shape.Size = jsonShape.Size;
+                            break;
+                    }
+                    if (shape != null) {
+                        shape.Color = Color.FromArgb(jsonShape.Color);
+                        shape.IsVisible = jsonShape.IsVisible;
+                        L.Add(shape);
+                    }
+                }
+
+                currentFilePath = filePath;
+                isFileModified = false;
+                UpdateFormTitle();
+                Refresh();
+                MessageBox.Show($"Loaded successfully from JSON file:\n{filePath}\nShapes: {L.Count}",
+                    "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } catch (Exception ex) {
+                MessageBox.Show($"Error loading JSON: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UpdateFormTitle() {
+            string fileName = string.IsNullOrEmpty(currentFilePath) ? "New file" : Path.GetFileName(currentFilePath);
+            string modifiedMark = isFileModified ? "*" : "";
+            this.Text = $"{fileName}{modifiedMark} - Shapes";
+        }
+
+        private void MarkAsModified() {
+            if (!isFileModified) {
+                isFileModified = true;
+                UpdateFormTitle();
+            }
         }
 
         private void MovementTimer_Tick(object sender, EventArgs e) {
@@ -75,6 +306,7 @@ namespace WinFormsApp {
                 shape.X += random.Next(-1, 2);
                 shape.Y += random.Next(-1, 2);
             }
+            MarkAsModified();
             Refresh();
         }
 
@@ -94,22 +326,21 @@ namespace WinFormsApp {
 
         private void Circle_RadiusChanged(object sender, RadiusEventArgs e) {
             if (sender is Circle circle) {
-                System.Diagnostics.Debug.WriteLine($"Radius% {e.OldRadius} -> {e.NewRadius}");
+                System.Diagnostics.Debug.WriteLine($"Radius changed: {e.OldRadius} -> {e.NewRadius}");
+                MarkAsModified();
                 Refresh();
             }
         }
 
         private int OnRadiusChanged(int s, bool b) {
-            foreach (Shape shape in L) {
-                if (shape is Circle circle) {
-                    int newRadius = s;
-                    if (newRadius > 0) {
-                        circle.Radius = newRadius;
-                    }
-                    break;
+            if (s > 0) {
+                currentSize = s;
+                foreach (Shape shape in L) {
+                    shape.Size = s;
                 }
+                MarkAsModified();
+                Refresh();
             }
-            Refresh();
             return s;
         }
 
@@ -145,11 +376,9 @@ namespace WinFormsApp {
 
         public void DrawPolygonJarvis(Graphics g) {
             if (L.Count < 1) return;
-            Pen polygonPen = new Pen(Color.Blue, 1);
             foreach (Shape shape in L) {
                 shape.IsHullVertex = false;
             }
-            List<Shape> convexHull = new List<Shape>();
             Shape start = L[0];
             foreach (Shape point in L) {
                 if (point.X < start.X || (point.X == start.X && point.Y < start.Y)) {
@@ -286,19 +515,24 @@ namespace WinFormsApp {
                     Shape newShape;
                     switch (currShapeType) {
                         case ShapeType.Circle:
-                            newShape = new Circle(e.X, e.Y);
-                            if (newShape is Circle circle) {
-                                circle.RadiusChanged += Circle_RadiusChanged;
-                            }
+                            var circle = new Circle(e.X, e.Y);
+                            circle.Size = currentSize;
+                            circle.RadiusChanged += Circle_RadiusChanged;
+                            newShape = circle;
                             break;
                         case ShapeType.Triangle:
                             newShape = new Triangle(e.X, e.Y);
+                            newShape.Size = currentSize;
                             break;
                         case ShapeType.Square:
                             newShape = new Square(e.X, e.Y);
+                            newShape.Size = currentSize;
                             break;
                         default:
-                            newShape = new Circle(e.X, e.Y);
+                            var defaultCircle = new Circle(e.X, e.Y);
+                            defaultCircle.Size = currentSize;
+                            defaultCircle.RadiusChanged += Circle_RadiusChanged;
+                            newShape = defaultCircle;
                             break;
                     }
                     newShape.Color = selectedColor;
@@ -307,6 +541,7 @@ namespace WinFormsApp {
                     if (L.Count == 1) {
                         L[0].IsVisible = true;
                     }
+                    MarkAsModified();
                     Refresh();
                     if (!newShape.IsHullVertex) {
                         foreach (Shape shape in L) {
@@ -325,6 +560,7 @@ namespace WinFormsApp {
                     if (L[i].IsInside(e.X, e.Y)) {
                         L.RemoveAt(i);
                         removed = true;
+                        MarkAsModified();
                     }
                 }
             }
@@ -355,6 +591,7 @@ namespace WinFormsApp {
                     moved = true;
                 }
                 if (moved) {
+                    MarkAsModified();
                     Refresh();
                 }
             }
@@ -376,13 +613,16 @@ namespace WinFormsApp {
                 for (int i = L.Count - 1; i >= 0; i--) {
                     if (!L[i].IsHullVertex) {
                         L.RemoveAt(i);
+                        MarkAsModified();
                     }
                 }
             }
             Refresh();
         }
 
-        private void Form1_Load(object sender, EventArgs e) { }
+        private void Form1_Load(object sender, EventArgs e) {
+            UpdateFormTitle();
+        }
 
         private void circleToolStripMenuItem_Click(object sender, EventArgs e) {
             currShapeType = ShapeType.Circle;
@@ -437,24 +677,74 @@ namespace WinFormsApp {
         }
 
         private void radiusToolStripMenuItem_Click(object sender, EventArgs e) {
-            Circle circle = null;
-            foreach (Shape shape in L) {
-                if (shape is Circle c) {
-                    circle = c;
-                    break;
-                }
-            }
+            int currentSizeValue = (L.Count > 0) ? L[0].Size : currentSize;
             if (form2 == null || form2.IsDisposed) {
                 form2 = new Form2();
-            } else if (!form2.IsDisposed) {
-                form2.Activate();
             }
-            if (form2.WindowState == FormWindowState.Minimized) {
-                form2.WindowState = FormWindowState.Normal;
-            }
-            if (circle != null) form2.SetRadius(circle.Radius);
+            form2.SetRadius(currentSizeValue);
             form2.RadiusChanged += OnRadiusChanged;
             form2.Show();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e) {
+            if (isFileModified && L.Count > 0) {
+                DialogResult result = MessageBox.Show("There are unsaved changes. Save before uploading?",
+                    "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+
+                if (result == DialogResult.Yes) {
+                    saveToolStripMenuItem_Click(null, null);
+                    if (isFileModified) {
+                        e.Cancel = true;
+                    }
+                } else if (result == DialogResult.Cancel) {
+                    e.Cancel = true;
+                }
+            }
+            base.OnFormClosing(e);
+        }
+
+        private void binToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (L.Count == 0) {
+                MessageBox.Show("No shapes to save!", "Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog()) {
+                saveFileDialog.Filter = "Binary files (*.bin)|*.bin";
+                saveFileDialog.FilterIndex = 1;
+                saveFileDialog.RestoreDirectory = true;
+                saveFileDialog.DefaultExt = "bin";
+                saveFileDialog.Title = "Save as BIN...";
+                saveFileDialog.FileName = "shapes.bin";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+                    currentFilePath = saveFileDialog.FileName;
+                    SaveToFile(currentFilePath);
+                }
+            }
+        }
+
+        private void jsonToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (L.Count == 0) {
+                MessageBox.Show("No shapes to save!", "Warning",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog()) {
+                saveFileDialog.Filter = "JSON files (*.json)|*.json";
+                saveFileDialog.FilterIndex = 1;
+                saveFileDialog.RestoreDirectory = true;
+                saveFileDialog.DefaultExt = "json";
+                saveFileDialog.Title = "Save as JSON...";
+                saveFileDialog.FileName = "shapes.json";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+                    currentFilePath = saveFileDialog.FileName;
+                    SaveToJsonFile(currentFilePath);
+                }
+            }
         }
     }
 

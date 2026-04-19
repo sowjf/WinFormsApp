@@ -54,6 +54,8 @@
             toolStrip1 = new ToolStrip();
             toolStripButton1 = new ToolStripButton();
             toolStripButton2 = new ToolStripButton();
+            binToolStripMenuItem = new ToolStripMenuItem();
+            jsonToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -97,9 +99,11 @@
             // 
             // saveAsToolStripMenuItem
             // 
+            saveAsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { binToolStripMenuItem, jsonToolStripMenuItem });
             saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
             saveAsToolStripMenuItem.Size = new Size(180, 22);
             saveAsToolStripMenuItem.Text = "Save as";
+            saveAsToolStripMenuItem.Click += saveAsToolStripMenuItem_Click;
             // 
             // editToolStripMenuItem
             // 
@@ -242,6 +246,20 @@
             toolStripButton2.Text = "toolStripButton2";
             toolStripButton2.Click += toolStripButton2_Click;
             // 
+            // binToolStripMenuItem
+            // 
+            binToolStripMenuItem.Name = "binToolStripMenuItem";
+            binToolStripMenuItem.Size = new Size(180, 22);
+            binToolStripMenuItem.Text = "Bin";
+            binToolStripMenuItem.Click += binToolStripMenuItem_Click;
+            // 
+            // jsonToolStripMenuItem
+            // 
+            jsonToolStripMenuItem.Name = "jsonToolStripMenuItem";
+            jsonToolStripMenuItem.Size = new Size(180, 22);
+            jsonToolStripMenuItem.Text = "Json";
+            jsonToolStripMenuItem.Click += jsonToolStripMenuItem_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -298,5 +316,7 @@
         private ToolStripButton toolStripButton1;
         private ToolStripButton toolStripButton2;
         private ToolStripMenuItem colorToolStripMenuItem1;
+        private ToolStripMenuItem binToolStripMenuItem;
+        private ToolStripMenuItem jsonToolStripMenuItem;
     }
 }
