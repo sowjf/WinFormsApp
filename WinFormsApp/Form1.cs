@@ -746,6 +746,27 @@ namespace WinFormsApp {
                 }
             }
         }
+
+        private void newToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (isFileModified && L.Count > 0) {
+                DialogResult result = MessageBox.Show("There are unsaved changes. Save before uploading?",
+                    "Warning", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+
+                if (result == DialogResult.Yes) {
+                    saveToolStripMenuItem_Click(sender, e);
+                    if (isFileModified) return;
+                } else if (result == DialogResult.Cancel) {
+                    return;
+                }
+            }
+
+            L.Clear();
+            Refresh();
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
+            this.Close();
+        }
     }
 
     public enum ShapeType {
