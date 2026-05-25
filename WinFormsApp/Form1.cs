@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 using System.Windows.Forms;
+using WinFormsApp;
 using WinFormsApp1;
 
 namespace WinFormsApp {
@@ -23,6 +24,16 @@ namespace WinFormsApp {
         private bool isFileModified = false;
         private int[] customColors = null;
         private int currentSize = 25;
+        private Shape selectedShape = null;
+        private bool wasShapeMoved = false;
+
+        //undo & redo
+        private Stack<List<Shape>> undoStack = new Stack<List<Shape>>();
+        private Stack<List<Shape>> redoStack = new Stack<List<Shape>>();
+
+        // Для перемещения области
+        private List<Shape> movingHull = new List<Shape>();
+        private float startMouseX, startMouseY;
 
         public Form1() {
             InitializeComponent();
@@ -32,6 +43,241 @@ namespace WinFormsApp {
             movementTimer = new System.Windows.Forms.Timer();
             movementTimer.Interval = 50;
             movementTimer.Tick += MovementTimer_Tick;
+        }
+
+        private void SaveState() {
+            List<Shape> stateCopy = new List<Shape>();
+            foreach (var shape in L) {
+                Shape newShape = null;
+                if (shape is Circle) {
+                    var c = new Circle(shape.X, shape.Y);
+                    c.Size = shape.Size;
+                    c.Color = shape.Color;
+                    c.IsVisible = shape.IsVisible;
+                    c.IsHullVertex = shape.IsHullVertex;
+                    newShape = c;
+                } else if (shape is Triangle) {
+                    var t = new Triangle(shape.X, shape.Y);
+                    t.Size = shape.Size;
+                    t.Color = shape.Color;
+                    t.IsVisible = shape.IsVisible;
+                    t.IsHullVertex = shape.IsHullVertex;
+                    newShape = t;
+                } else if (shape is Square) {
+                    var s = new Square(shape.X, shape.Y);
+                    s.Size = shape.Size;
+                    s.Color = shape.Color;
+                    s.IsVisible = shape.IsVisible;
+                    s.IsHullVertex = shape.IsHullVertex;
+                    newShape = s;
+                }
+                if (newShape != null) {
+                    stateCopy.Add(newShape);
+                }
+            }
+            undoStack.Push(stateCopy);
+            redoStack.Clear();
+            UpdateUndoRedoMenu();
+        }
+
+        private void Undo() {
+            if (undoStack.Count > 0) {
+                List<Shape> currentState = new List<Shape>();
+                foreach (var shape in L) {
+                    Shape newShape = null;
+                    if (shape is Circle) {
+                        var c = new Circle(shape.X, shape.Y);
+                        c.Size = shape.Size;
+                        c.Color = shape.Color;
+                        c.IsVisible = shape.IsVisible;
+                        c.IsHullVertex = shape.IsHullVertex;
+                        newShape = c;
+                    } else if (shape is Triangle) {
+                        var t = new Triangle(shape.X, shape.Y);
+                        t.Size = shape.Size;
+                        t.Color = shape.Color;
+                        t.IsVisible = shape.IsVisible;
+                        t.IsHullVertex = shape.IsHullVertex;
+                        newShape = t;
+                    } else if (shape is Square) {
+                        var s = new Square(shape.X, shape.Y);
+                        s.Size = shape.Size;
+                        s.Color = shape.Color;
+                        s.IsVisible = shape.IsVisible;
+                        s.IsHullVertex = shape.IsHullVertex;
+                        newShape = s;
+                    }
+                    if (newShape != null) {
+                        currentState.Add(newShape);
+                    }
+                }
+                redoStack.Push(currentState);
+
+                var previousState = undoStack.Pop();
+                L.Clear();
+                foreach (var shape in previousState) {
+                    Shape newShape = null;
+                    if (shape is Circle) {
+                        var c = new Circle(shape.X, shape.Y);
+                        c.Size = shape.Size;
+                        c.Color = shape.Color;
+                        c.IsVisible = shape.IsVisible;
+                        c.IsHullVertex = shape.IsHullVertex;
+                        c.RadiusChanged += Circle_RadiusChanged;
+                        newShape = c;
+                    } else if (shape is Triangle) {
+                        var t = new Triangle(shape.X, shape.Y);
+                        t.Size = shape.Size;
+                        t.Color = shape.Color;
+                        t.IsVisible = shape.IsVisible;
+                        t.IsHullVertex = shape.IsHullVertex;
+                        newShape = t;
+                    } else if (shape is Square) {
+                        var s = new Square(shape.X, shape.Y);
+                        s.Size = shape.Size;
+                        s.Color = shape.Color;
+                        s.IsVisible = shape.IsVisible;
+                        s.IsHullVertex = shape.IsHullVertex;
+                        newShape = s;
+                    }
+                    if (newShape != null) {
+                        L.Add(newShape);
+                    }
+                }
+
+                Refresh();
+                MarkAsModified();
+                UpdateUndoRedoMenu();
+            }
+        }
+
+        private void Redo() {
+            if (redoStack.Count > 0) {
+                List<Shape> currentState = new List<Shape>();
+                foreach (var shape in L) {
+                    Shape newShape = null;
+                    if (shape is Circle) {
+                        var c = new Circle(shape.X, shape.Y);
+                        c.Size = shape.Size;
+                        c.Color = shape.Color;
+                        c.IsVisible = shape.IsVisible;
+                        c.IsHullVertex = shape.IsHullVertex;
+                        newShape = c;
+                    } else if (shape is Triangle) {
+                        var t = new Triangle(shape.X, shape.Y);
+                        t.Size = shape.Size;
+                        t.Color = shape.Color;
+                        t.IsVisible = shape.IsVisible;
+                        t.IsHullVertex = shape.IsHullVertex;
+                        newShape = t;
+                    } else if (shape is Square) {
+                        var s = new Square(shape.X, shape.Y);
+                        s.Size = shape.Size;
+                        s.Color = shape.Color;
+                        s.IsVisible = shape.IsVisible;
+                        s.IsHullVertex = shape.IsHullVertex;
+                        newShape = s;
+                    }
+                    if (newShape != null) {
+                        currentState.Add(newShape);
+                    }
+                }
+                undoStack.Push(currentState);
+
+                var nextState = redoStack.Pop();
+                L.Clear();
+                foreach (var shape in nextState) {
+                    Shape newShape = null;
+                    if (shape is Circle) {
+                        var c = new Circle(shape.X, shape.Y);
+                        c.Size = shape.Size;
+                        c.Color = shape.Color;
+                        c.IsVisible = shape.IsVisible;
+                        c.IsHullVertex = shape.IsHullVertex;
+                        c.RadiusChanged += Circle_RadiusChanged;
+                        newShape = c;
+                    } else if (shape is Triangle) {
+                        var t = new Triangle(shape.X, shape.Y);
+                        t.Size = shape.Size;
+                        t.Color = shape.Color;
+                        t.IsVisible = shape.IsVisible;
+                        t.IsHullVertex = shape.IsHullVertex;
+                        newShape = t;
+                    } else if (shape is Square) {
+                        var s = new Square(shape.X, shape.Y);
+                        s.Size = shape.Size;
+                        s.Color = shape.Color;
+                        s.IsVisible = shape.IsVisible;
+                        s.IsHullVertex = shape.IsHullVertex;
+                        newShape = s;
+                    }
+                    if (newShape != null) {
+                        L.Add(newShape);
+                    }
+                }
+
+                Refresh();
+                MarkAsModified();
+                UpdateUndoRedoMenu();
+            }
+        }
+
+        private void UpdateUndoRedoMenu() {
+            toolStripButton3.Enabled = undoStack.Count > 0;
+            toolStripButton4.Enabled = redoStack.Count > 0;
+        }
+
+        private void ResetToDefaults() {
+            L.Clear();
+            currShapeType = ShapeType.Circle;
+            drawingMode = DrawingMode.byDefinition;
+            isPlaying = false;
+            movementTimer.Stop();
+            selectedColor = Color.Black;
+            currentFilePath = null;
+            isFileModified = false;
+            customColors = null;
+            currentSize = 25;
+            selectedShape = null;
+            wasShapeMoved = false;
+
+            undoStack.Clear();
+            redoStack.Clear();
+            movingHull.Clear();
+
+            circleToolStripMenuItem.Checked = true;
+            triangleToolStripMenuItem.Checked = false;
+            squareToolStripMenuItem.Checked = false;
+            byDefinitionToolStripMenuItem.Checked = true;
+            jarvisToolStripMenuItem.Checked = false;
+            graphicsToolStripMenuItem.Checked = false;
+            playToolStripMenuItem.Enabled = true;
+            stopToolStripMenuItem.Enabled = false;
+
+            if (form2 != null && !form2.IsDisposed) {
+                form2.SetRadius(currentSize);
+            }
+
+            UpdateFormTitle();
+            UpdateUndoRedoMenu();
+            Refresh();
+        }
+
+        private bool IsPointInPolygon(float x, float y, List<Shape> polygon) {
+            if (polygon.Count < 3) return false;
+
+            bool inside = false;
+            for (int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++) {
+                float xi = polygon[i].X;
+                float yi = polygon[i].Y;
+                float xj = polygon[j].X;
+                float yj = polygon[j].Y;
+
+                bool intersect = ((yi > y) != (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
         }
 
         private void colorToolStripMenuItem1_Click(object sender, EventArgs e) {
@@ -45,6 +291,8 @@ namespace WinFormsApp {
             }
 
             if (colorDialog.ShowDialog() == DialogResult.OK) {
+                SaveState();
+
                 selectedColor = colorDialog.Color;
 
                 foreach (Shape shape in L) {
@@ -223,6 +471,15 @@ namespace WinFormsApp {
                 currentFilePath = filePath;
                 isFileModified = false;
                 UpdateFormTitle();
+
+                if (form2 != null && !form2.IsDisposed) {
+                    form2.SetRadius(currentSize);
+                }
+
+                undoStack.Clear();
+                redoStack.Clear();
+                UpdateUndoRedoMenu();
+
                 Refresh();
                 MessageBox.Show($"Loaded successfully from file:\n{filePath}\nShapes: {L.Count}",
                     "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -278,6 +535,15 @@ namespace WinFormsApp {
                 currentFilePath = filePath;
                 isFileModified = false;
                 UpdateFormTitle();
+
+                if (form2 != null && !form2.IsDisposed) {
+                    form2.SetRadius(currentSize);
+                }
+
+                undoStack.Clear();
+                redoStack.Clear();
+                UpdateUndoRedoMenu();
+
                 Refresh();
                 MessageBox.Show($"Loaded successfully from JSON file:\n{filePath}\nShapes: {L.Count}",
                     "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -334,6 +600,8 @@ namespace WinFormsApp {
 
         private int OnRadiusChanged(int s, bool b) {
             if (s > 0) {
+                SaveState();
+
                 currentSize = s;
                 foreach (Shape shape in L) {
                     shape.Size = s;
@@ -502,15 +770,36 @@ namespace WinFormsApp {
         }
 
         private void Form1_MouseDown(object sender, MouseEventArgs e) {
-            bool removed = false;
             if (e.Button == MouseButtons.Left) {
+                SaveState();
+
                 bool hit = false;
+                movingHull.Clear();
+
+                List<Shape> hullVertices = new List<Shape>();
                 foreach (Shape shape in L) {
-                    if (shape.IsInside(e.X, e.Y)) {
-                        shape.IsMoving = true;
-                        hit = true;
+                    if (shape.IsHullVertex) {
+                        hullVertices.Add(shape);
                     }
                 }
+
+                if (hullVertices.Count >= 3 && IsPointInPolygon(e.X, e.Y, hullVertices)) {
+                    movingHull.AddRange(hullVertices);
+                    startMouseX = e.X;
+                    startMouseY = e.Y;
+                    hit = true;
+                }
+
+                if (!hit) {
+                    foreach (Shape shape in L) {
+                        if (shape.IsInside(e.X, e.Y)) {
+                            shape.IsMoving = true;
+                            hit = true;
+                            break;
+                        }
+                    }
+                }
+
                 if (!hit) {
                     Shape newShape;
                     switch (currShapeType) {
@@ -536,12 +825,9 @@ namespace WinFormsApp {
                             break;
                     }
                     newShape.Color = selectedColor;
+                    newShape.IsVisible = true;
                     L.Add(newShape);
                     newShape.IsMoving = true;
-                    if (L.Count == 1) {
-                        L[0].IsVisible = true;
-                    }
-                    MarkAsModified();
                     Refresh();
                     if (!newShape.IsHullVertex) {
                         foreach (Shape shape in L) {
@@ -552,23 +838,38 @@ namespace WinFormsApp {
                     }
                     Refresh();
                 }
-                if (removed) {
-                    Refresh();
-                }
             } else if (e.Button == MouseButtons.Right) {
+                SaveState();
+
                 for (int i = L.Count - 1; i >= 0; i--) {
                     if (L[i].IsInside(e.X, e.Y)) {
                         L.RemoveAt(i);
-                        removed = true;
                         MarkAsModified();
+                        Refresh();
+                        break;
                     }
                 }
             }
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e) {
+            if (movingHull.Count > 0) {
+                float deltaX = e.X - startMouseX;
+                float deltaY = e.Y - startMouseY;
+
+                if ((deltaX != 0 || deltaY != 0) && (Math.Abs(deltaX) > 3 || Math.Abs(deltaY) > 3)) {
+                    foreach (Shape shape in movingHull) {
+                        shape.X += (int)deltaX;
+                        shape.Y += (int)deltaY;
+                    }
+                    startMouseX = e.X;
+                    startMouseY = e.Y;
+                    Refresh();
+                }
+                return;
+            }
+
             if (e.Button == MouseButtons.Left) {
-                bool moved = false;
                 List<Shape> movedShapes = new List<Shape>();
                 foreach (Shape shape in L) {
                     if (shape.IsMoving) {
@@ -584,44 +885,59 @@ namespace WinFormsApp {
                     }
                     int deltaX = e.X - firstMoved.X;
                     int deltaY = e.Y - firstMoved.Y;
-                    foreach (Shape shape in movedShapes) {
-                        shape.X += deltaX;
-                        shape.Y += deltaY;
+
+                    if ((deltaX != 0 || deltaY != 0) && (Math.Abs(deltaX) > 3 || Math.Abs(deltaY) > 3)) {
+                        foreach (Shape shape in movedShapes) {
+                            shape.X += deltaX;
+                            shape.Y += deltaY;
+                        }
+                        Refresh();
                     }
-                    moved = true;
-                }
-                if (moved) {
-                    MarkAsModified();
-                    Refresh();
                 }
             }
             return;
         }
 
         private void Form1_MouseUp(object sender, MouseEventArgs e) {
+            if (movingHull.Count > 0) {
+                movingHull.Clear();
+                MarkAsModified();
+            }
+
             foreach (Shape shape in L) {
-                if (shape.IsInside(e.X, e.Y)) {
-                    shape.IsMoving = false;
-                }
+                shape.IsMoving = false;
             }
-            if (L.Count > 0 && !L[L.Count - 1].IsHullVertex) {
-                foreach (Shape shape in L) {
-                    shape.IsMoving = false;
-                }
+
+            if (drawingMode == DrawingMode.byDefinition) {
+                DrawPolygonByDifinition(null);
+            } else if (drawingMode == DrawingMode.jarvis) {
+                DrawPolygonJarvis(null);
             }
+
             if (L.Count > 3) {
-                for (int i = L.Count - 1; i >= 0; i--) {
-                    if (!L[i].IsHullVertex) {
-                        L.RemoveAt(i);
-                        MarkAsModified();
+                bool hasNonHull = false;
+                foreach (Shape shape in L) {
+                    if (!shape.IsHullVertex) {
+                        hasNonHull = true;
+                        break;
+                    }
+                }
+
+                if (hasNonHull) {
+                    for (int i = L.Count - 1; i >= 0; i--) {
+                        if (!L[i].IsHullVertex) {
+                            L.RemoveAt(i);
+                        }
                     }
                 }
             }
+
             Refresh();
         }
 
         private void Form1_Load(object sender, EventArgs e) {
             UpdateFormTitle();
+            UpdateUndoRedoMenu();
         }
 
         private void circleToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -760,12 +1076,21 @@ namespace WinFormsApp {
                 }
             }
 
-            L.Clear();
-            Refresh();
+            ResetToDefaults();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             this.Close();
+        }
+
+        // undo
+        private void toolStripButton3_Click(object sender, EventArgs e) {
+            Undo();
+        }
+
+        // redo
+        private void toolStripButton4_Click(object sender, EventArgs e) {
+            Redo();
         }
     }
 

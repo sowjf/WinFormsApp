@@ -16,6 +16,37 @@ namespace WinFormsApp {
     }
 
     [Serializable]
+    public class Change {
+        public enum ChangeType {
+            Add,
+            Remove,
+            Move
+        }
+
+        public ChangeType Type { get; set; }
+        public Shape Shape { get; set; }
+        public int OldX { get; set; }
+        public int OldY { get; set; }
+        public int NewX { get; set; }
+        public int NewY { get; set; }
+        public int Index { get; set; }
+
+        public Change(ChangeType type, Shape shape) {
+            Type = type;
+            Shape = shape;
+        }
+
+        public Change(Shape shape, int oldX, int oldY, int newX, int newY) {
+            Type = ChangeType.Move;
+            Shape = shape;
+            OldX = oldX;
+            OldY = oldY;
+            NewX = newX;
+            NewY = newY;
+        }
+    }
+
+    [Serializable]
     public abstract class Shape {
         protected int x, y;
         protected int R;
