@@ -46,6 +46,8 @@ namespace WinFormsApp {
         }
 
         private void SaveState() {
+            redoStack.Clear();
+
             List<Shape> stateCopy = new List<Shape>();
             foreach (var shape in L) {
                 Shape newShape = null;
@@ -76,7 +78,6 @@ namespace WinFormsApp {
                 }
             }
             undoStack.Push(stateCopy);
-            redoStack.Clear();
             UpdateUndoRedoMenu();
         }
 
@@ -115,6 +116,14 @@ namespace WinFormsApp {
 
                 var previousState = undoStack.Pop();
                 L.Clear();
+
+                if (previousState.Count > 0) {
+                    currentSize = previousState[0].Size;
+                    if (form2 != null && !form2.IsDisposed) {
+                        form2.SetRadius(currentSize);
+                    }
+                }
+
                 foreach (var shape in previousState) {
                     Shape newShape = null;
                     if (shape is Circle) {
@@ -186,6 +195,14 @@ namespace WinFormsApp {
 
                 var nextState = redoStack.Pop();
                 L.Clear();
+
+                if (nextState.Count > 0) {
+                    currentSize = nextState[0].Size;
+                    if (form2 != null && !form2.IsDisposed) {
+                        form2.SetRadius(currentSize);
+                    }
+                }
+
                 foreach (var shape in nextState) {
                     Shape newShape = null;
                     if (shape is Circle) {
@@ -598,15 +615,19 @@ namespace WinFormsApp {
             }
         }
 
-        private int OnRadiusChanged(int s, bool b) {
+        private int OnRadiusChanged(int s, bool isFinal) {
             if (s > 0) {
-                SaveState();
-
-                currentSize = s;
                 foreach (Shape shape in L) {
                     shape.Size = s;
                 }
-                MarkAsModified();
+
+                if (isFinal && s != currentSize) {
+                    SaveState();
+                    currentSize = s;
+                    MarkAsModified();
+                }
+
+                currentSize = s;
                 Refresh();
             }
             return s;
@@ -902,6 +923,7 @@ namespace WinFormsApp {
             if (movingHull.Count > 0) {
                 movingHull.Clear();
                 MarkAsModified();
+                SaveState();
             }
 
             foreach (Shape shape in L) {

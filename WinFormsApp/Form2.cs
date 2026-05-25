@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace WinFormsApp {
     public partial class Form2 : Form {
-        public delegate int SomeDelegate(int s, bool b);
+        public delegate int SomeDelegate(int s, bool isFinal);
         public event SomeDelegate RadiusChanged;
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -12,11 +12,10 @@ namespace WinFormsApp {
 
         private TrackBar trackBar;
         private Label valueLabel;
-        private Label resultLabel;
         private int currentRadius = 25;
 
         public Form2() {
-            this.Text = "Form2";
+            this.Text = "Radius settings";
             this.Size = new System.Drawing.Size(400, 200);
             this.StartPosition = FormStartPosition.CenterScreen;
 
@@ -38,6 +37,7 @@ namespace WinFormsApp {
                 SmallChange = 5
             };
             trackBar.Scroll += TrackBar_Scroll;
+            trackBar.MouseUp += TrackBar_MouseUp;
 
             valueLabel = new Label {
                 Location = new System.Drawing.Point(50, 100),
@@ -51,7 +51,6 @@ namespace WinFormsApp {
             this.Controls.Add(valueLabel);
 
             S = new SomeDelegate(CalculateRadius);
-            RadiusChanged += OnRadiusChanged;
         }
 
         public void SetRadius(int radius) {
@@ -60,25 +59,20 @@ namespace WinFormsApp {
             valueLabel.Text = $"Current radius: {radius}";
         }
 
-        private int CalculateRadius(int s, bool b) {
+        private int CalculateRadius(int s, bool isFinal) {
             return s;
         }
 
         private void TrackBar_Scroll(object sender, EventArgs e) {
             currentRadius = trackBar.Value;
             valueLabel.Text = $"Current radius: {currentRadius}";
-
-            bool parameter = currentRadius > 50;
-
-            //if (S != null) {
-            //    int result = S(currentRadius, parameter);
-            //}
-
-            RadiusChanged?.Invoke(currentRadius, parameter);
+            // Передаем isFinal = false - обновляем радиус但没有 сохраняем в стек
+            RadiusChanged?.Invoke(currentRadius, false);
         }
 
-        private int OnRadiusChanged(int s, bool b) {
-            return s;
+        private void TrackBar_MouseUp(object sender, MouseEventArgs e) {
+            // Передаем isFinal = true - сохраняем только это значение в стек
+            RadiusChanged?.Invoke(currentRadius, true);
         }
     }
 }
